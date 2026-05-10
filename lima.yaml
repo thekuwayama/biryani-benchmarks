@@ -1,0 +1,16 @@
+minimumLimaVersion: 2.0.0
+images:
+- location: "https://cloud-images.ubuntu.com/releases/noble/release-20260321/ubuntu-24.04-server-cloudimg-arm64.img"
+  arch: "aarch64"
+  digest: "sha256:1ea801e659d2f5035ac294e0faab0aac9b6ba66753df933ba5c7beab0c689bd0"
+
+mounts:
+- location: "~/biryani-benchmarks"
+  mountPoint: "/biryani-benchmarks"
+  writable: true
+
+provision:
+- mode: user
+  script: |
+    cd /biryani-benchmarks
+    bash setup.sh
