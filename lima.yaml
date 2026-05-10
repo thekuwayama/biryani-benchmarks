@@ -1,4 +1,6 @@
 minimumLimaVersion: 2.0.0
+cpus: 4
+memory: "4GiB"
 images:
 - location: "https://cloud-images.ubuntu.com/releases/noble/release-20260321/ubuntu-24.04-server-cloudimg-arm64.img"
   arch: "aarch64"
