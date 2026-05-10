@@ -5,7 +5,7 @@ RUBY_VERSION=$(cat .ruby-version)
 
 # System dependencies
 sudo apt update
-sudo apt install -y build-essential git libssl-dev zlib1g-dev libffi-dev libyaml-dev libreadline-dev rbenv
+sudo apt install -y build-essential git libssl-dev zlib1g-dev libffi-dev libyaml-dev libreadline-dev rbenv nghttp2-client
 
 # ruby-build (apt version is too old for Ruby 4.x)
 git clone https://github.com/rbenv/ruby-build.git "$(rbenv root)/plugins/ruby-build"
