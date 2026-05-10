@@ -18,5 +18,8 @@ To generate a FlameGraph from the load test:
 
 ```sh-session
 $ sudo env PATH="$PATH" perf record -e cpu-clock -F 99 --call-graph dwarf -m 512M -o output/perf.data bundle exec rake load
+
+# Ctrl+C
+
 $ sudo perf script -i output/perf.data | ./FlameGraph/stackcollapse-perf.pl | ./FlameGraph/flamegraph.pl > output/flamegraph.svg
 ```
