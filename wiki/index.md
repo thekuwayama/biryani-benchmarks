@@ -15,9 +15,7 @@ biryani（Ractor HTTP/2 実装）のパフォーマンスに関する知識ベ�
 
 ## Ractor 内部実装
 
-<!-- wiki/internals/ 以下のページ -->
-
-（まだなし）
+- [[internals/ractor-architecture]] — biryani の Ractor 構造：接続ごと + recv_loop + ストリームごとに Ractor 生成。-c50 -m100 で最大 5,100 Ractor
 
 ## 特殊ページ
 
