@@ -8,6 +8,7 @@ biryani（Ractor HTTP/2 実装）のパフォーマンスに関する知識ベ�
 
 - [[scenarios/baseline-default]] — デフォルトパラメータ（-n10000 -c50 -m100 -t10）: 4,981 req/s、レイテンシ 866ms mean
 - [[scenarios/sweep-m-parameter]] — `-m` スイープ（m=1〜100）: ピークは m=50 の 6,183 req/s。m=100 で逆に低下。レイテンシは m に線形比例
+- [[scenarios/sweep-c-parameter]] — `-c` スイープ（c=10〜100、m=50 固定）: ピークは c=25 の 7,695 req/s。c=50 より 13% 高スループット・レイテンシ 2.5× 低
 
 ## 発見・観察
 
