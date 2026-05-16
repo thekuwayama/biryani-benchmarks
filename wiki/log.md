@@ -4,6 +4,12 @@
 
 ---
 
+## [2026-05-17] benchmark | sweep-m-parameter
+-m=1〜100 スイープ（-c50 固定）。ピークは m=50 の 6,183 req/s。m=100 で逆に低下（オーバーサブスクリプション）。レイテンシは m に線形比例（m=1: 43ms → m=100: 718ms）。
+
+## [2026-05-17] internals | ractor-port-implementation
+ractor_sync.c 調査。recv_queue 二段キュー設計を解明。1送信 = 1 pthread_cond_broadcast = 1 futex syscall → FlameGraph の 16% の直接原因を確認。
+
 ## [2026-05-17] internals | ractor-architecture
 biryani ソース調査。接続ごと + recv_loop + ストリームごとに Ractor 生成（プールなし）。-c50 -m100 で最大 5,100 Ractor = FlameGraph のスレッド生成 12% + futex 16% の直接原因。
 
