@@ -6,15 +6,12 @@ biryani（Ractor HTTP/2 実装）のパフォーマンスに関する知識ベ�
 
 ## シナリオ
 
-<!-- wiki/scenarios/ 以下のページ -->
-
-（まだなし）
+- [[scenarios/baseline-default]] — デフォルトパラメータ（-n10000 -c50 -m100 -t10）: 4,981 req/s、レイテンシ 866ms mean
 
 ## 発見・観察
 
-<!-- wiki/findings/ 以下のページ -->
-
-（まだなし）
+- [[findings/latency-stream-multiplexing]] — 高レイテンシの原因としてストリーム多重化（-m100）によるキューイング遅延を仮説
+- [[findings/flamegraph-baseline-cpu-profile]] — CPU の 12% が Ractor 生成、16% が futex 同期、11% が GC（ベースライン）
 
 ## Ractor 内部実装
 
