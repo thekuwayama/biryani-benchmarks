@@ -5,7 +5,7 @@ tags: [internals]
 
 # `Ractor::Port` の実装（ruby/ruby v4.0.2）
 
-`ruby-src/ractor_sync.c` および `ractor.c` を読んで調査。
+`raw/ruby-src/ractor_sync.c` および `ractor.c` を読んで調査。
 
 ## データ構造
 

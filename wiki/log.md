@@ -31,6 +31,9 @@ perf + FlameGraph。Ractor 生成 ~12%、futex 同期 ~16%、GC ~11%、unknown 2
 ## [2026-05-17] benchmark | baseline-default
 4,981 req/s（-n10000 -c50 -m100 -t10）。全リクエスト成功。レイテンシ 866ms mean / sd 240ms — ストリーム多重化によるキューイング遅延を仮説。
 
+## [2026-05-17] meta | LLM Wiki 3レイヤー整理
+raw/（Raw Sources）・CLAUDE.md（Schema）・wiki/（Compiled Wiki）の3層に整理。output/ を raw/ に改名、CLAUDE.md をプロジェクトルートに新設。
+
 ## [2026-05-17] setup | Wiki 初期化
 
 wiki/ ディレクトリを初期化した。index.md / overview.md / log.md と scenarios/ findings/ internals/ ディレクトリを作成。

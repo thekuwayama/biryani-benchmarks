@@ -21,5 +21,5 @@ $ sudo env PATH="$PATH" perf record -e cpu-clock -F 99 --call-graph dwarf -m 512
 
 # Ctrl+C
 
-$ sudo perf script -i /tmp/perf.data | ./FlameGraph/stackcollapse-perf.pl | ./FlameGraph/flamegraph.pl > flamegraph.svg
+$ sudo perf script -i /tmp/perf.data | ./FlameGraph/stackcollapse-perf.pl | ./FlameGraph/flamegraph.pl > raw/flamegraph.svg
 ```

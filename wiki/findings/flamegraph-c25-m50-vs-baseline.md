@@ -7,6 +7,8 @@ tags: [finding]
 
 最高スループット構成（-c25 -m50、1,300 Ractors）とベースライン（-c50 -m100、5,100 Ractors）の CPU プロファイルを比較した。
 
+Raw sources: `raw/flamegraph_c25_m50.svg`（比較元: `raw/flamegraph_baseline.svg`）
+
 ## CPU 占有率の比較
 
 | カテゴリ | 関数 | baseline | -c25 -m50 | 変化 |

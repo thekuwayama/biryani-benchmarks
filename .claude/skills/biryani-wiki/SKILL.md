@@ -35,7 +35,7 @@ biryani（Ractor を使った HTTP/2 サーバー実装）をハーネスとし�
 | Lima VM | ベンチマーク・perf は Lima VM 上の Linux で動作。コマンドは `limactl shell --workdir /biryani-benchmarks lima bash -c 'eval "$(rbenv init -)" && <コマンド>'` |
 | ベンチマークツール | `h2load`（nghttp2）— HTTP/2 ロードジェネレータ |
 | プロファイラ | `perf` + `FlameGraph`（CPU）、`rperf`（Ruby メソッドレベル、wall time） |
-| ruby/ruby ソース | `ruby-src/`（v4.0.2 サブモジュール）— `ractor.c`, `ractor_sync.c`, `thread_pthread.c` など |
+| ruby/ruby ソース | `raw/ruby-src/`（v4.0.2 サブモジュール）— `ractor.c`, `ractor_sync.c`, `thread_pthread.c` など |
 | Wiki | `wiki/` — Claude が書き、ユーザーが読む |
 
 ## Wiki の構造
@@ -58,7 +58,7 @@ wiki/
 
 ruby/ruby の Ractor 関連ソースを調査するとき：
 
-- 対象ファイル: `ruby-src/ractor.c`, `ruby-src/ractor_sync.c`, `ruby-src/thread_pthread.c`, `ruby-src/vm_core.h`
+- 対象ファイル: `raw/ruby-src/ractor.c`, `raw/ruby-src/ractor_sync.c`, `raw/ruby-src/thread_pthread.c`, `raw/ruby-src/vm_core.h`
 - 調査結果を `wiki/internals/<トピック>.md` に記録する
 - 発見がベンチマーク結果と結びつくなら `[[findings/...]]` とクロスリファレンスを張る
 - 「なぜそう実装されているか」を問い、仮説を `wiki/questions/` に追記する
@@ -90,9 +90,11 @@ limactl shell --workdir /biryani-benchmarks lima bash -c 'eval "$(rbenv init -)"
 limactl shell --workdir /biryani-benchmarks lima bash -c '
   eval "$(rbenv init -)"
   bundle exec ruby load/profile_rperf.rb
-  rperf report --top /tmp/rperf_c25_m50_wall.json.gz
+  rperf report --top raw/rperf_c25_m50_wall.json.gz
 '
 ```
+
+結果は `raw/rperf_<シナリオ>_wall.json.gz` に保存される。
 
 **perf + FlameGraph（OS/C レベル）**:
 ```bash
@@ -102,12 +104,12 @@ limactl shell --workdir /biryani-benchmarks lima bash -c '
     -m 512M -o /tmp/perf.data bundle exec ruby load/<スクリプト>.rb
   sudo perf script -i /tmp/perf.data \
     | ./FlameGraph/stackcollapse-perf.pl \
-    | ./FlameGraph/flamegraph.pl > flamegraph.svg
+    | ./FlameGraph/flamegraph.pl > raw/flamegraph_<シナリオ>.svg
 '
-open flamegraph.svg
+open raw/flamegraph_<シナリオ>.svg
 ```
 
-プロファイラ結果は `wiki/findings/<名前>.md` に記録する。
+結果は `raw/flamegraph_<シナリオ>.svg` に保存される。プロファイラ結果は `wiki/findings/<名前>.md` に記録する。
 
 ### 4. テストシナリオ検討
 

@@ -12,6 +12,8 @@ tags: [finding]
 | perf + FlameGraph | ✅ 動作 | sudo 必要、C フレームレベル、unknown 24% |
 | rperf wall モード | ✅ 動作 | sudo 不要、Ruby メソッドレベル、GVL/GC ラベル付き |
 
+Raw sources: `raw/rperf_c25_m50_wall.json.gz`、`raw/flamegraph_c25_m50.svg`
+
 ## rperf wall モード結果（-c25 -m50）
 
 ### Flat（関数単体の wall time）

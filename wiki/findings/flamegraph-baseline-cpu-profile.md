@@ -7,6 +7,8 @@ tags: [finding]
 
 ベースラインシナリオ（-n10000 -c50 -m100 -t10）に対して perf + FlameGraph でプロファイルを取った結果。
 
+Raw source: `raw/flamegraph_baseline.svg`
+
 ## 主要な CPU 消費内訳
 
 | 関数 | CPU 占有率 | カテゴリ |
