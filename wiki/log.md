@@ -4,6 +4,12 @@
 
 ---
 
+## [2026-05-17] profile | rperf-wall-c25-m50
+rperf wall モード。IO#read 47.9%、Ractor.select 33.5%、IO#write 14.6%、Ractor.new 0.0%。biryani は I/O バウンドと判明。Vernier は Ractor でセグフォルト（Ruby 4.0.2 + Vernier 1.10.1）。
+
+## [2026-05-17] profile | c25-m50-vs-baseline
+-c25 -m50 FlameGraph。Ractor 生成 ~10%（baseline 比 ▼44%）、futex ~11%（▼31%）、vm_exec_core ~14%（▲40%）。Ractor 数削減で有効仕事の割合が増加。
+
 ## [2026-05-17] benchmark | sweep-c-parameter
 -c=10〜100 スイープ（-m50 固定）。ピークは c=25 の 7,695 req/s（全体最高）。c=50 より 13% 高スループット・レイテンシ 2.5× 低。最適 Ractor 数は 1,000〜1,500 と推測。
 

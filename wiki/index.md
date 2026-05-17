@@ -14,6 +14,8 @@ biryani（Ractor HTTP/2 実装）のパフォーマンスに関する知識ベ�
 
 - [[findings/latency-stream-multiplexing]] — 高レイテンシの原因としてストリーム多重化（-m100）によるキューイング遅延を仮説
 - [[findings/flamegraph-baseline-cpu-profile]] — CPU の 12% が Ractor 生成、16% が futex 同期、11% が GC（ベースライン）
+- [[findings/flamegraph-c25-m50-vs-baseline]] — -c25 -m50 vs baseline 比較：Ractor 生成 ▼半減、futex ▼11%、vm_exec_core ▲14%（有効仕事増）
+- [[findings/rperf-wall-vs-perf-cpu]] — 大発見：biryani は I/O バウンド。IO#read 47.9%、Ractor.select 33.5%。Ractor.new は wall time 0.0%
 
 ## Ractor 内部実装
 

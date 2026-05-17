@@ -36,6 +36,16 @@
 
 **現時点の最高スループットは `-c25 -m50`（7,695 req/s）**。4 コア環境での最適 Ractor 数は 1,000〜1,500 程度と推測。
 
+### rperf wall プロファイルの発見（2026-05-17）
+
+**biryani は I/O バウンド**。rperf wall モードで計測すると：
+- `IO#read`: 47.9%（ソケット読み込み待ち）
+- `Ractor.select`: 33.5%（イベントループ待機）
+- `IO#write`: 14.6%（レスポンス書き込み）
+- `Ractor.new`: **0.0%**（Ractor 生成は wall time でほぼゼロ）
+
+perf の CPU プロファイルで「重い」と見えたスレッド生成・futex は CPU 時間の問題であり、wall time の問題ではなかった。（[[findings/rperf-wall-vs-perf-cpu]] 参照）
+
 ## 未解決の疑問
 
 - `-c25 -m50` でのレイテンシ特性と FlameGraph（Ractor 数が減った場合の futex 比率の変化）
