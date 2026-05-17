@@ -32,6 +32,7 @@
 
 ## Ractor 内部実装
 
+- [[internals/ractor-overview]] — Ractor 全体像（OS マッピング・ライフサイクル・共有モデル・API）
 - [[internals/biryani-ractor-architecture]] — biryani の Ractor 構造（接続 + recv_loop + ストリームごと生成）
 - [[internals/ractor-port-implementation]] — Ractor::Port の C 実装（recv_queue 二段キュー、1送信=1 futex）
 - [[internals/ractor-sync-wakeup]] — wakeup メカニズム精査（broadcast/signal・全ポートポーリング）
