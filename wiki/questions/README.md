@@ -10,14 +10,19 @@ tags: [question]
 
 ## 未解決の疑問リスト
 
-### Q5: M:N モード下での FlameGraph の `thread_create_core` の解釈
+### Q5: M:N モード下での FlameGraph の `thread_create_core` の解釈（→ 解決）
 
-非 main Ractor は M:N スケジューラを使うため、biryani の 1,300 Ractors は最大 N=8 OS スレッドを共有する。
-それにもかかわらず FlameGraph では `thread_create_core` + `nt_alloc_stack` が ~10% 現れている。
+**回答**（2026-05-17）:
 
-- ブロッキング I/O（`IO#read`）のたびに追加の OS スレッドが生成されているのか？
-- SNT プールの初期構築コストが計上されているのか？
-- `RUBY_MAX_CPU` を変えるとどう変化するか？
+`thread_create_core` ~10% は **SNT プール補充（replenishment）コスト**。
+
+`IO#read` → `native_thread_dedicated_inc` → `snt_cnt` 減少 → タイマー or Ractor 生成時に
+`native_thread_check_and_create_shared` が `pthread_create` で新 SNT を生成。
+biryani の高 I/O 頻度によりこのサイクルが連続する。
+
+詳細: [[internals/ractor-mn-snt-lifecycle]]
+
+コントリビュート候補: [[contributions/snt-replenishment-overhead]]
 
 関連: [[internals/ractor-overview]], [[findings/flamegraph-c25-m50-vs-baseline]]
 

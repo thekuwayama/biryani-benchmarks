@@ -4,6 +4,12 @@
 
 ---
 
+## [2026-05-17] internals | SNT ライフサイクルと補充ロジック（Q5 解決）
+`thread_create_core` ~10% = SNT プール補充コスト。IO#read → dedicated_inc → snt_cnt 減少 → タイマー or Ractor 生成で pthread_create。MINIMUM_SNT=0、max_cpu=8 の条件下で biryani の高 I/O 頻度が連続補充を引き起こす。
+
+## [2026-05-17] contribution | snt-replenishment-overhead 候補登録
+SNT 補充の頻繁な pthread_create（CPU ~10%）を削減する Issue 候補。改善アイデア3案（ヒステリシス・max_cpu 増加・ノンブロッキング I/O）。次ステップは RUBY_MAX_CPU を変えた実測。
+
 ## [2026-05-17] internals | pthread wakeup パスの正確な解明
 `ractor_sync.c` の `rb_ractor_sched_wakeup` with `pthread_cond_broadcast` は `#else // win32` ブロック内。**Linux (pthread) では走らない**。pthread 版は `thread_pthread.c:1366` で `r_th` を M:N スケジューラ経由で起こす（`thread_sched_to_ready_common` → `rb_native_cond_signal`）。
 
