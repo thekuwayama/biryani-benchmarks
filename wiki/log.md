@@ -4,6 +4,12 @@
 
 ---
 
+## [2026-05-17] benchmark | RUBY_MAX_CPU スイープ（-c25 -m50）
+物理コア数（4）でピーク 8,456 req/s。デフォルト(8)より+3%。16以上で急落(-18%/-43%)。thread_pthread.c:1735 に "TODO: CPU num?" コメント発見。
+
+## [2026-05-17] contribution | default-max-cpu-cpu-count PR 候補登録
+default_max_cpu=8 を sysconf(_SC_NPROCESSORS_ONLN) に変更する PR 候補。TODO コメントが開発者の意図を示す。次ステップは git log で意図確認 + CPU バウンドワークロードでの追加ベンチマーク。
+
 ## [2026-05-17] internals | SNT ライフサイクルと補充ロジック（Q5 解決）
 `thread_create_core` ~10% = SNT プール補充コスト。IO#read → dedicated_inc → snt_cnt 減少 → タイマー or Ractor 生成で pthread_create。MINIMUM_SNT=0、max_cpu=8 の条件下で biryani の高 I/O 頻度が連続補充を引き起こす。
 

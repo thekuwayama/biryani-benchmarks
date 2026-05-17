@@ -18,6 +18,7 @@
 - [[scenarios/baseline-default]] — デフォルト（-c50 -m100）: 4,981 req/s、latency 866ms
 - [[scenarios/sweep-m-parameter]] — `-m` スイープ（1〜100）: ピーク m=50、6,183 req/s。レイテンシは m に線形比例
 - [[scenarios/sweep-c-parameter]] — `-c` スイープ（10〜100、m=50 固定）: ピーク c=25、7,695 req/s（全体最高）
+- [[scenarios/sweep-ruby-max-cpu]] — **RUBY_MAX_CPU スイープ**: ピーク cpu=4（物理コア数）、8,456 req/s。デフォルト8より+3%
 
 ---
 
@@ -49,5 +50,6 @@
 
 ## コントリビュート候補
 
+- [[contributions/default-max-cpu-cpu-count]] — **★ PR 候補**: `default_max_cpu=8` → 物理 CPU 数に変更（TODO コメントあり、実測 +3%）
 - [[contributions/snt-replenishment-overhead]] — **候補**: SNT 補充の頻繁な pthread_create を削減（CPU ~10%）
-- [[contributions/cond-signal-vs-broadcast]] — ~~broadcast → signal~~（クローズ：Win32 ブロック内のみ、Linux には無関係）
+- [[contributions/cond-signal-vs-broadcast]] — ~~broadcast → signal~~（クローズ：Win32 ブロック内のみ）
