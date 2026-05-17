@@ -66,6 +66,6 @@ tags: [scenario]
 
 - [[scenarios/baseline-default]]
 - [[findings/latency-stream-multiplexing]]
-- [[internals/ractor-architecture]]
+- [[internals/biryani-ractor-architecture]]
 - [[internals/ractor-port-implementation]]
 - [[overview]]

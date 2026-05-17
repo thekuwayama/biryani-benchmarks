@@ -75,5 +75,5 @@ tags: [scenario]
 
 - [[scenarios/sweep-m-parameter]]
 - [[scenarios/baseline-default]]
-- [[internals/ractor-architecture]]
+- [[internals/biryani-ractor-architecture]]
 - [[overview]]

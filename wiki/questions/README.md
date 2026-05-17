@@ -17,7 +17,7 @@ rperf wall モードで `-c25 -m50` を計測すると `Ractor.select` が wall 
 - Stream Ractor からのレスポンス待機か
 - その比率はどうか
 
-関連: [[findings/rperf-wall-vs-perf-cpu]], [[internals/ractor-architecture]]
+関連: [[findings/rperf-wall-vs-perf-cpu]], [[internals/biryani-ractor-architecture]]
 
 ### Q2: `IO#read` の 47.9% はブロッキング I/O か
 
@@ -33,7 +33,7 @@ perf の CPU プロファイルでは Ractor 生成（スレッド生成）が ~
 
 wall time ではほぼゼロだが、CPU サイクルを消費している。Ractor をプールして再利用すれば CPU 効率が上がるか？ ruby/ruby の Ractor は使い捨て前提の設計か？
 
-関連: [[internals/ractor-architecture]], [[findings/flamegraph-c25-m50-vs-baseline]]
+関連: [[internals/biryani-ractor-architecture]], [[findings/flamegraph-c25-m50-vs-baseline]]
 
 ### Q4: `pthread_cond_broadcast` を避けられるか（→ 調査済み）
 

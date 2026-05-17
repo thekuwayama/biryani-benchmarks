@@ -12,7 +12,7 @@
 
 biryani は接続ごとに 2 Ractors（Connection + recv_loop）＋ストリームごとに 1 Ractor（Stream）を生成する。プールなし・使い捨て設計。`-c50 -m100` で最大 5,100 Ractors。
 
-詳細: [[internals/ractor-architecture]], [[internals/ractor-port-implementation]]
+詳細: [[internals/biryani-ractor-architecture]], [[internals/ractor-port-implementation]]
 
 ### スループット特性
 
