@@ -69,15 +69,20 @@ while (1) {
 
 ## 二段キュー設計（recv_queue + per-port queues）
 
-```
-送信者               受信 Ractor
-  send()
-    ↓
-  recv_queue ─[起床]→  ractor_wait_receive()
-                           ↓
-                       recv_queue → per-port キューへ振り分け
-                           ↓
-                       ractor_try_receive() で該当 port を dequeue
+```mermaid
+sequenceDiagram
+    participant S as 送信者
+    participant RQ as recv_queue（共通）
+    participant W as ractor_wait_receive
+    participant PQ as per-port queue
+    participant R as ractor_try_receive
+
+    S->>RQ: ractor_queue_enq()
+    S->>W: ractor_wakeup_all()（pthread_cond_broadcast）
+    W->>RQ: ractor_check_received()
+    RQ->>PQ: basket を port_id で振り分け
+    PQ->>R: ractor_queue_deq()
+    R-->>S: 受信完了
 ```
 
 **この設計の意図**:
