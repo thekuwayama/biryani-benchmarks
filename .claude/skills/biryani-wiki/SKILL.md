@@ -194,3 +194,11 @@ tags: [scenario|finding|internals|question|contribution]
 
 - [[ページ名]]
 ```
+
+図が必要な場合は **Mermaid** を使う。ただし **呼び出しスタック・ツリー構造は ASCII art のまま**でよい。
+
+```markdown
+​```mermaid
+sequenceDiagram / stateDiagram-v2 / flowchart TD / ...
+​```
+```

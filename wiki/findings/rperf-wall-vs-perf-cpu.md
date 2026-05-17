@@ -66,12 +66,12 @@ wall time（実経過時間）で測ると：
 
 ### 解釈
 
-```
-wall time の内訳（-c25 -m50）:
-  ████████████████████████ IO#read       47.9%  ← ソケット待ち（I/O bound）
-  ████████████████ Ractor.select         33.5%  ← イベントループ待機
-  ███████ IO#write                       14.6%  ← レスポンス書き込み
-  █ その他（Ractor.new, Port, HPACK等)   4.0%
+```mermaid
+xychart-beta horizontal
+    title "wall time の内訳（-c25 -m50）"
+    x-axis ["IO#read", "Ractor.select", "IO#write", "その他"]
+    y-axis "wall time %" 0 --> 50
+    bar [47.9, 33.5, 14.6, 4.0]
 ```
 
 biryani のボトルネックは **I/O 待機**であり、Ractor の生成・同期のオーバーヘッドではない。`Ractor.select` の 33.5% は recv_loop と stream Ractor 双方からのメッセージを待つ構造的な待機時間。

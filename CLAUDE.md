@@ -53,6 +53,10 @@ tags: [scenario|finding|internals|question|contribution]
 - [[ページ名]]
 ```
 
+## 図の規約
+
+wiki ページに図が必要な場合は **Mermaid** を使う。ただし呼び出しスタック・ツリー構造は ASCII art のまま可。
+
 ## クロスリファレンス規約
 
 - wiki ページ間: `[[ページ名]]`（`wiki/` からの相対パス、拡張子なし）

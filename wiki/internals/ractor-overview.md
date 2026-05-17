@@ -38,13 +38,17 @@ Ruby 3.3 から導入された **M:N スケジューラ**（goroutine スケジ�
 
 M:N モードで使われる共有 OS スレッド。
 
-```
-SNT-1 ─── Ractor-A のスレッド
-       └── Ractor-B のスレッド（A がブロック中に実行）
-       └── Ractor-C のスレッド（...）
-
-SNT-2 ─── Ractor-D のスレッド
-       └── ...
+```mermaid
+flowchart LR
+    subgraph SNT-1["SNT-1（OS スレッド）"]
+        A["Ractor-A のスレッド"]
+        B["Ractor-B のスレッド<br/>A がブロック中に実行"]
+        C["Ractor-C のスレッド"]
+    end
+    subgraph SNT-2["SNT-2（OS スレッド）"]
+        D["Ractor-D のスレッド"]
+        E["..."]
+    end
 ```
 
 > "Ruby threads from different ractors can even run on the same SNT."
