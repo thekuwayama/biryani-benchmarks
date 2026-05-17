@@ -35,10 +35,15 @@ wall time ではほぼゼロだが、CPU サイクルを消費している。Rac
 
 関連: [[internals/ractor-architecture]], [[findings/flamegraph-c25-m50-vs-baseline]]
 
-### Q4: `pthread_cond_broadcast` を避けられるか
+### Q4: `pthread_cond_broadcast` を避けられるか（→ 調査済み）
 
 `Ractor::Port#send` は毎回 `pthread_cond_broadcast`（futex）を発行する。
-ビジーウェイトや条件付き broadcast（待機者がいる場合のみ）で削減できるか？
-ruby/ruby 側での最適化余地があるか？
 
-関連: [[internals/ractor-port-implementation]]
+**調査結果** (`[[internals/ractor-sync-wakeup]]`):
+- `rb_ractor_sched_wakeup` は `th` 引数を受け取るが**完全に無視**し、常に broadcast
+- 1 Ractor = 1 スレッドなので `pthread_cond_signal` で意味的に正確かつ同等
+- `rb_native_cond_signal` はコードベースに存在し多数の箇所で利用されている
+
+→ PR 候補に昇格: `[[contributions/cond-signal-vs-broadcast]]`
+
+関連: [[internals/ractor-port-implementation]], [[internals/ractor-sync-wakeup]]

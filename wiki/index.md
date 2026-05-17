@@ -34,6 +34,7 @@
 
 - [[internals/ractor-architecture]] — biryani の Ractor 構造（接続 + recv_loop + ストリームごと生成）
 - [[internals/ractor-port-implementation]] — Ractor::Port の C 実装（recv_queue 二段キュー、1送信=1 futex）
+- [[internals/ractor-sync-wakeup]] — wakeup メカニズム精査（broadcast/signal・全ポートポーリング）
 
 ---
 
@@ -45,4 +46,4 @@
 
 ## コントリビュート候補
 
-- [[contributions/README]] — 現時点では候補なし（疑問を深掘り中）
+- [[contributions/cond-signal-vs-broadcast]] — `rb_ractor_sched_wakeup`: broadcast → signal（1行変更、実測で裏付け中）
