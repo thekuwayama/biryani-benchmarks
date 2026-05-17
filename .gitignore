@@ -15,5 +15,3 @@
 /conformance/reports/
 /tmp/
 .DS_Store
-output/*
-!output/.gitkeep

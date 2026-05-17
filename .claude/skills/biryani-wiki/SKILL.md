@@ -90,11 +90,7 @@ limactl shell --workdir /biryani-benchmarks lima bash -c 'eval "$(rbenv init -)"
 limactl shell --workdir /biryani-benchmarks lima bash -c '
   eval "$(rbenv init -)"
   bundle exec ruby load/profile_rperf.rb
-'
-# レポート確認
-limactl shell --workdir /biryani-benchmarks lima bash -c '
-  eval "$(rbenv init -)"
-  rperf report --top output/rperf_c25_m50_wall.json.gz
+  rperf report --top /tmp/rperf_c25_m50_wall.json.gz
 '
 ```
 
@@ -103,11 +99,12 @@ limactl shell --workdir /biryani-benchmarks lima bash -c '
 limactl shell --workdir /biryani-benchmarks lima bash -c '
   eval "$(rbenv init -)"
   sudo env PATH="$PATH" perf record -e cpu-clock -F 99 --call-graph dwarf \
-    -m 512M -o output/perf.data bundle exec ruby load/<スクリプト>.rb
-  sudo perf script -i output/perf.data \
+    -m 512M -o /tmp/perf.data bundle exec ruby load/<スクリプト>.rb
+  sudo perf script -i /tmp/perf.data \
     | ./FlameGraph/stackcollapse-perf.pl \
-    | ./FlameGraph/flamegraph.pl > output/flamegraph.svg
+    | ./FlameGraph/flamegraph.pl > flamegraph.svg
 '
+open flamegraph.svg
 ```
 
 プロファイラ結果は `wiki/findings/<名前>.md` に記録する。

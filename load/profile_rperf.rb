@@ -23,8 +23,9 @@ Ractor.new(socket) do |s|
   server.run(s)
 end
 
-Rperf.start(output: 'output/rperf_c25_m50_wall.json.gz', mode: :wall) do
+Rperf.start(output: '/tmp/rperf_c25_m50_wall.json.gz', mode: :wall) do
   system("h2load -n#{N} -c#{C} -m#{M} -t#{T} http://localhost:#{PORT}")
 end
 
-puts "rperf wall profile saved to output/rperf_c25_m50_wall.json.gz"
+puts "rperf wall profile saved to /tmp/rperf_c25_m50_wall.json.gz"
+puts "report: rperf report --top /tmp/rperf_c25_m50_wall.json.gz"
