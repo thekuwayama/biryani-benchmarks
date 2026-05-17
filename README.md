@@ -17,9 +17,9 @@ $ limactl shell --workdir /biryani-benchmarks lima
 To generate a FlameGraph from the load test:
 
 ```sh-session
-$ sudo env PATH="$PATH" perf record -e cpu-clock -F 99 --call-graph dwarf -m 512M -o output/perf.data bundle exec rake load
+$ sudo env PATH="$PATH" perf record -e cpu-clock -F 99 --call-graph dwarf -m 512M -o /tmp/perf.data bundle exec rake load
 
 # Ctrl+C
 
-$ sudo perf script -i output/perf.data | ./FlameGraph/stackcollapse-perf.pl | ./FlameGraph/flamegraph.pl > output/flamegraph.svg
+$ sudo perf script -i /tmp/perf.data | ./FlameGraph/stackcollapse-perf.pl | ./FlameGraph/flamegraph.pl > flamegraph.svg
 ```
