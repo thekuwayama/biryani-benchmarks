@@ -28,20 +28,15 @@ Thread との最大の違い:
 
 ## ライフサイクル
 
-```
-ractor_create
-     │
-  [created]
-     │ 最初のスレッド挿入
-  [blocking] ──→ [running]
-                    │  ↑
-            I/O 待機│  │I/O 完了
-                    ↓  │
-                 [blocking]
-                    │
-              ブロック完了
-                    │
-             [terminated]
+```mermaid
+stateDiagram-v2
+    [*] --> created : ractor_create
+    created --> blocking : 最初のスレッド挿入
+    blocking --> running : スケジュール
+    running --> blocking : I/O 待機（rb_nogvl）
+    blocking --> running : I/O 完了
+    running --> terminated : ブロック実行完了
+    terminated --> [*]
 ```
 
 ソース: `ractor_status_set`（`ractor.c:164`）、状態名は `ractor_status_str`（`ractor.c:152`）
