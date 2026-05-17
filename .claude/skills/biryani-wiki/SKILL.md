@@ -168,7 +168,9 @@ status: 候補 | 調査中 | 提出済み | クローズ
 **CPU の内訳**（perf、-c25 -m50）:
 - スレッド生成 ~10%、futex 同期 ~11%、GC ~8%、Ruby VM 実行 ~14%
 
-**Ractor::Port の仕組み**: 1 送信 = 1 `pthread_cond_broadcast` = 1 futex syscall（`ractor_sync.c`）
+**Ractor wakeup の仕組み（Linux/pthread）**: 1 送信 → `rb_ractor_sched_wakeup`（`thread_pthread.c:1366`）→ `rb_native_cond_signal(&th->nt->cond.readyq)`（per-SNT、すでに signal）。`ractor_sync.c` の `pthread_cond_broadcast` は Win32 ブロック内のみで Linux では走らない。
+
+**futex ~11% の真因**: Ractor send ではなく、ブロッキング I/O（`IO#read` 47.9%）による dedicated SNT の `pthread_cond_wait` / `signal`（M:N スケジューラの `cond.readyq`）。
 
 ## h2load 出力の読み方
 

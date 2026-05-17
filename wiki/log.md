@@ -4,6 +4,17 @@
 
 ---
 
+## [2026-05-17] internals | pthread wakeup パスの正確な解明
+`ractor_sync.c` の `rb_ractor_sched_wakeup` with `pthread_cond_broadcast` は `#else // win32` ブロック内。**Linux (pthread) では走らない**。pthread 版は `thread_pthread.c:1366` で `r_th` を M:N スケジューラ経由で起こす（`thread_sched_to_ready_common` → `rb_native_cond_signal`）。
+
+## [2026-05-17] finding | futex 11% の真因は M:N スケジューラの dedicated NT
+biryani の `IO#read` (47.9%) はブロッキング I/O → 各スレッドが dedicated SNT を取得 → I/O 完了時に `rb_native_cond_signal(&th->nt->cond.readyq)` で起こす。FlameGraph の futex ~11% はここが出所。Ractor send ではない。
+
+## [2026-05-17] contribution | cond-signal-vs-broadcast をクローズ
+前提誤り：broadcast は Win32 ブロック内のみ。Linux では関係なし。PR 候補をクローズ。
+
+---
+
 ## [2026-05-17] meta | ゴール再定義
 ruby/ruby Ractor へのコントリビュートを目標に設定。wiki に questions/ と contributions/ を追加。5ステップのサイクル（ソースリーディング→ベンチマーク→プロファイラ→テストシナリオ→議論）を設計。
 

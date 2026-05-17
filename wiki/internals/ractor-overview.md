@@ -58,6 +58,30 @@ Ruby スレッドはコンテキストスイッチのたびに SNT を乗り換�
 ブロッキング I/O 発生時は epoll/kqueue（Linux: `USE_MN_THREADS=1` が epoll で有効化）が
 完了を検知し、次の Ruby スレッドを SNT に載せる。
 
+### dedicated SNT（専有ネイティブスレッド）
+
+ブロッキング操作（`IO#read` 等）を実行中のスレッドは SNT を **専有（dedicated）** する。
+他の Ruby スレッドはその SNT を使えない。
+
+```mermaid
+flowchart LR
+    subgraph 通常時
+        A["Ractor-A"] --> S1["SNT-1"]
+        B["Ractor-B"] --> S1
+        C["Ractor-C"] --> S1
+    end
+    subgraph IO#read中
+        D["Ractor-D<br/>IO#read ブロック中"] --> S2["SNT-2<br/>（専有・他は入れない）"]
+        E["Ractor-E"] --> S3["SNT-3（別の SNT を使う）"]
+    end
+```
+
+dedicated SNT になると `native_thread_dedicated_inc`（`thread_pthread.c:1009`）が呼ばれ、
+スレッドは `rb_native_cond_wait(&th->nt->cond.readyq, ...)` で眠る。
+I/O 完了時に `rb_native_cond_signal(&th->nt->cond.readyq)` で起こされる。
+
+**biryani との関係**: `IO#read` が 47.9%（wall time）を占めるため、dedicated SNT の確保・解放が頻繁に発生する。FlameGraph の futex ~11% の主因。→ [[findings/futex-mn-scheduler-dedicated-nt]]
+
 ### biryani への影響
 
 biryani の `-c25 -m50` では 1,300 の非 main Ractor が起動する。

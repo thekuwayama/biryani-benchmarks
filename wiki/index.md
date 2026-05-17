@@ -27,6 +27,7 @@
 - [[findings/flamegraph-baseline-cpu-profile]] — CPU: Ractor 生成 12%、futex 16%、GC 11%（ベースライン）
 - [[findings/flamegraph-c25-m50-vs-baseline]] — -c25 -m50 で有効 CPU 仕事増（vm_exec_core 10%→14%）
 - [[findings/rperf-wall-vs-perf-cpu]] — **大発見**: biryani は I/O バウンド。IO#read 47.9%、Ractor.new 0.0%
+- [[findings/futex-mn-scheduler-dedicated-nt]] — futex ~11% の真因：ブロッキング I/O → dedicated SNT の cond_signal/wait（Ractor send ではない）
 
 ---
 
@@ -35,16 +36,16 @@
 - [[internals/ractor-overview]] — Ractor 全体像（OS マッピング・ライフサイクル・共有モデル・API）
 - [[internals/biryani-ractor-architecture]] — biryani の Ractor 構造（接続 + recv_loop + ストリームごと生成）
 - [[internals/ractor-port-implementation]] — Ractor::Port の C 実装（recv_queue 二段キュー、1送信=1 futex）
-- [[internals/ractor-sync-wakeup]] — wakeup メカニズム精査（broadcast/signal・全ポートポーリング）
+- [[internals/ractor-sync-wakeup]] — wakeup メカニズム精査（Win32 vs pthread 分岐・M:N スケジューラの実際のパス）
 
 ---
 
 ## 未解決の疑問
 
-- [[questions/README]] — ruby/ruby に問いたい疑問 4 件
+- [[questions/README]] — ruby/ruby に問いたい疑問（Q6: dedicated SNT コストを下げられるか、ほか）
 
 ---
 
 ## コントリビュート候補
 
-- [[contributions/cond-signal-vs-broadcast]] — `rb_ractor_sched_wakeup`: broadcast → signal（1行変更、実測で裏付け中）
+- [[contributions/cond-signal-vs-broadcast]] — ~~broadcast → signal~~（クローズ：Win32 ブロック内のコードで Linux には無関係）

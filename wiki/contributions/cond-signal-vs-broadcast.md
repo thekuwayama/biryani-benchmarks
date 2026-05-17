@@ -1,7 +1,7 @@
 ---
 date: 2026-05-17
 type: pr
-status: 候補
+status: クローズ（誤分析）
 ---
 
 # `rb_ractor_sched_wakeup`: broadcast → signal への変更
@@ -66,18 +66,32 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 
 詳細分析: [[internals/ractor-sync-wakeup]]
 
-## 次のステップ
+## クローズ理由（2026-05-17 追記）
 
-1. **実測**: ruby/ruby を patch して benchmark を比較する
-   - 現在: `pthread_cond_broadcast`
-   - 変更後: `pthread_cond_signal`
-   - 指標: FlameGraph の futex 比率・h2load の req/s
-2. **ruby-dev / GitHub Issue で事前確認**: 意図的に `broadcast` にしている理由があるか
-   （例: GVL 解放中の spurious wakeup 対策など）
-3. 問題なければ PR 作成
+**前提が誤っていた。**
 
-## 懸念点
+`rb_ractor_sched_wakeup` の `pthread_cond_broadcast` は `#ifdef RUBY_THREAD_PTHREAD_H ... #else // win32` の **Win32 ブロック内**にある。Linux（pthread）ではこのコードパスは一切走らない。
 
-- `broadcast` を意図的に使っている理由がある可能性（コメントなし）
-- 将来的に 1 Ractor に複数スレッドを許す設計変更がある場合は `broadcast` が必要
-- Win32 実装（`#else // win32` ブランチ L.917）では別の実装があるため確認が必要
+pthread 版の `rb_ractor_sched_wakeup` は `thread_pthread.c:1366` に定義され、`r_th` 引数を正しく使って M:N スケジューラ経由で特定スレッドを起こす：
+
+```
+rb_ractor_sched_wakeup(r, r_th)           # thread_pthread.c:1366
+  └─ thread_sched_to_ready_common(sched, r_th, ...)   # L.795
+       └─ thread_sched_wakeup_running_thread(sched, next_th, ...) # L.762
+            └─ rb_native_cond_signal(&next_th->nt->cond.readyq)   # すでに signal!
+```
+
+- `th` 引数は既に使われている（Win32 版のみ未使用）
+- すでに `signal`（broadcast ではない）
+- per-Ractor ではなく per-SNT（Shared Native Thread）の条件変数
+
+FlameGraph の futex ~11% の真因は Ractor send ではなく、ブロッキング I/O による dedicated SNT の `cond_signal` / `cond_wait`。→ [[findings/futex-mn-scheduler-dedicated-nt]]
+
+## 関連する ruby/ruby のコード（正確な版）
+
+| ファイル | 行 | 内容 |
+|----------|---|------|
+| `raw/ruby-src/ractor_sync.c` | 913-969 | `#else // win32` ブロック（broadcast はここ） |
+| `raw/ruby-src/thread_pthread.c` | 1366-1380 | pthread 版 `rb_ractor_sched_wakeup`（th を使う） |
+| `raw/ruby-src/thread_pthread.c` | 762-791 | `thread_sched_wakeup_running_thread`（signal） |
+| `raw/ruby-src/thread_pthread.c` | 844-858 | `thread_sched_wait_running_turn`（cond_wait 側） |

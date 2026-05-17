@@ -48,15 +48,25 @@ wall time ではほぼゼロだが、CPU サイクルを消費している。Rac
 
 関連: [[internals/biryani-ractor-architecture]], [[findings/flamegraph-c25-m50-vs-baseline]]
 
-### Q4: `pthread_cond_broadcast` を避けられるか（→ 調査済み）
+### Q4: `pthread_cond_broadcast` を避けられるか（→ クローズ：誤分析）
 
-`Ractor::Port#send` は毎回 `pthread_cond_broadcast`（futex）を発行する。
+~~`Ractor::Port#send` は毎回 `pthread_cond_broadcast`（futex）を発行する。~~
 
-**調査結果** (`[[internals/ractor-sync-wakeup]]`):
-- `rb_ractor_sched_wakeup` は `th` 引数を受け取るが**完全に無視**し、常に broadcast
-- 1 Ractor = 1 スレッドなので `pthread_cond_signal` で意味的に正確かつ同等
-- `rb_native_cond_signal` はコードベースに存在し多数の箇所で利用されている
+**再調査結果**（2026-05-17）:
+`rb_ractor_sched_wakeup` の `pthread_cond_broadcast` は `#else // win32` ブロック内。
+**Linux (pthread) では走らない。** pthread 版は `thread_pthread.c:1366` で `r_th` を直接使い、
+M:N スケジューラ経由で `rb_native_cond_signal`（すでに signal）を発行する。
 
-→ PR 候補に昇格: `[[contributions/cond-signal-vs-broadcast]]`
+→ `[[contributions/cond-signal-vs-broadcast]]` はクローズ。
 
-関連: [[internals/ractor-port-implementation]], [[internals/ractor-sync-wakeup]]
+### Q6: dedicated SNT の生成コストを下げられるか
+
+FlameGraph の futex ~11% は Ractor send ではなく、ブロッキング I/O による dedicated SNT の
+`pthread_cond_wait` / `signal` が出所（`[[findings/futex-mn-scheduler-dedicated-nt]]`）。
+
+- `IO#read` のたびに `native_thread_dedicated_inc` → dedicated SNT を確保する
+- biryani の 1,300 Ractors × 複数回 IO#read = 大量の SNT 切り替え
+- dedicated SNT の再利用 / プール化は可能か？
+- ノンブロッキング I/O（io_uring / epoll）を使えば dedicated SNT を避けられるか？
+
+関連: [[internals/ractor-sync-wakeup]], [[findings/futex-mn-scheduler-dedicated-nt]]

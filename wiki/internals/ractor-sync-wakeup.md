@@ -8,23 +8,47 @@ tags: [internals]
 `ractor_sync.c` の wakeup パスを精査した。`pthread_cond_broadcast` の使われ方に
 コード品質と最適化の観点から注目すべき点が3つある。
 
-## コールチェーン（send → wakeup）
+## プラットフォーム分岐（重要）
+
+`ractor_sync.c` の wakeup 実装は **Win32 と pthreads で完全に別コード**。
+
+```c
+// ractor_sync.c:913
+#ifdef RUBY_THREAD_PTHREAD_H
+// pthread 版: rb_ractor_sched_wakeup は thread_pthread.c で定義
+#else // win32
+static void
+rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
+{
+    rb_native_cond_broadcast(&r->sync.wakeup_cond);  // th は未使用！
+}
+#endif
+```
+
+Linux（Lima VM のベンチマーク環境）では **`#else // win32` ブロックは走らない**。
+
+## Linux (pthread) の実際のコールチェーン
 
 ```
 Ractor::Port#send
   └─ ractor_send0
        └─ ractor_send_basket          # lock → enqueue → unlock
-            └─ ractor_wakeup_all      # 1200行
-                 └─ rb_ractor_sched_wakeup   # 964行
-                      └─ rb_native_cond_broadcast(r->sync.wakeup_cond)
+            └─ ractor_wakeup_all      # ractor_sync.c:972
+                 └─ rb_ractor_sched_wakeup(r, waiter->th)  # thread_pthread.c:1366
+                      └─ thread_sched_to_ready_common(sched, r_th, ...)  # L.795
+                           └─ thread_sched_wakeup_running_thread(sched, r_th, ...)  # L.762
+                                └─ rb_native_cond_signal(&r_th->nt->cond.readyq)  # per-SNT signal!
 ```
 
-`ractor_send_basket` は:
-1. Receiver の lock を取り、recv_queue に basket を積み、unlock
-2. `ractor_wakeup_all` を呼んで Receiver を起こす
+重要なポイント：
+- **`th` 引数は pthread 版では正しく使われている**（waiter のスレッドを直接指定）
+- **すでに `signal`**（broadcast ではない）
+- **per-Ractor ではなく per-SNT**（Shared Native Thread）の条件変数 `th->nt->cond.readyq`
+
+`ractor_send_basket` の enqueue 部分（参考）：
 
 ```c
-// 1185-1200行（抜粋）
+// ractor_sync.c:1185-1200（抜粋）
 RACTOR_LOCK(rp->r);
 ractor_queue_enq(rp->r, rp->r->sync.recv_queue, b);
 RACTOR_UNLOCK(rp->r);
@@ -34,29 +58,17 @@ if (!closed) {
 }
 ```
 
-## 発見 A: `th` 引数が完全に無視されている
+## Win32 版の問題点（Linux には無関係）
+
+Win32 ブロック内の `rb_ractor_sched_wakeup` では `th` 引数が無視されている。
+これは Win32 のみに影響し、Linux ベンチマーク環境には関係しない。
+
+→ [[contributions/cond-signal-vs-broadcast]]（クローズ済み）
+
+## 発見 B: `ractor_wakeup_all` が N 人のウェイターに N 回 wakeup を呼ぶ
 
 ```c
-// 963-968行
-static void
-rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
-{
-    // ractor lock is acquired
-    rb_native_cond_broadcast(&r->sync.wakeup_cond);  // th は未使用
-}
-```
-
-- `th` は呼び出し元から渡されるが関数内で一切使われない
-- `rb_native_cond_signal` はコードベースに存在し `thread_pthread.c` の 771・1253・1469・2435 行で使われている
-- 1 Ractor = 1 OS スレッド なので `wakeup_cond` を待っているスレッドは常に ≤1
-- `broadcast` は「全ウェイターを起こす」、`signal` は「ウェイターを1つ起こす」
-
-`signal` への変更は意味的により正確で、`th` 引数の存在とも整合する。
-
-## 発見 B: `ractor_wakeup_all` が N 人のウェイターに N 回 broadcast
-
-```c
-// 972-998行
+// 972-998行（プラットフォーム共通）
 static bool
 ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
 {
@@ -65,7 +77,7 @@ ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
         struct ractor_waiter *waiter = ccan_list_pop(&r->sync.waiters, ...);
         if (waiter) {
             waiter->wakeup_status = wakeup_status;
-            rb_ractor_sched_wakeup(r, waiter->th);  // ← ループ内で broadcast
+            rb_ractor_sched_wakeup(r, waiter->th);  // ← ループ内
             wakeup_p = true;
         }
         else { break; }
@@ -75,23 +87,7 @@ ractor_wakeup_all(rb_ractor_t *r, enum ractor_wakeup_status wakeup_status)
 }
 ```
 
-N 人のウェイターがいると broadcast が N 回呼ばれる。1 回でも全員起きる。
-ただし現実には 1 Ractor = 1 スレッドなので N ≤ 1 であり実害はない。
-
-構造的な改善案:
-
-```c
-// 全ステータスをセットしてから 1 回だけ broadcast
-bool wakeup_p = false;
-RACTOR_LOCK(r);
-while (1) {
-    waiter = ccan_list_pop(...)
-    if (waiter) { waiter->wakeup_status = wakeup_status; wakeup_p = true; }
-    else break;
-}
-if (wakeup_p) rb_native_cond_broadcast(&r->sync.wakeup_cond);
-RACTOR_UNLOCK(r);
-```
+現実には 1 Ractor = 1 スレッド（M:N 下でも Ractor につき 1 Ruby スレッド）なので N ≤ 1。実害なし。
 
 ## 発見 C: `Ractor.select` が毎 wakeup で全ポートをポーリング
 
