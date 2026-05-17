@@ -10,6 +10,19 @@ tags: [question]
 
 ## 未解決の疑問リスト
 
+### Q5: M:N モード下での FlameGraph の `thread_create_core` の解釈
+
+非 main Ractor は M:N スケジューラを使うため、biryani の 1,300 Ractors は最大 N=8 OS スレッドを共有する。
+それにもかかわらず FlameGraph では `thread_create_core` + `nt_alloc_stack` が ~10% 現れている。
+
+- ブロッキング I/O（`IO#read`）のたびに追加の OS スレッドが生成されているのか？
+- SNT プールの初期構築コストが計上されているのか？
+- `RUBY_MAX_CPU` を変えるとどう変化するか？
+
+関連: [[internals/ractor-overview]], [[findings/flamegraph-c25-m50-vs-baseline]]
+
+
+
 ### Q1: `Ractor.select` の 33.5% は何を待っているのか
 
 rperf wall モードで `-c25 -m50` を計測すると `Ractor.select` が wall time の 33.5% を占める。この待機時間の内訳を知りたい：

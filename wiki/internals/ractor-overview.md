@@ -17,14 +17,52 @@ Thread との最大の違い:
 - **Thread**: 全スレッドが1つの GVL（Global VM Lock）を共有 → Ruby コードは同時実行できない
 - **Ractor**: 各 Ractor が独自の GVL を持つ → 複数 Ractor が真に並列実行できる
 
-## OS スレッドとのマッピング
+## OS スレッドとのマッピング — M:N スレッドスケジューラ
 
-**1 Ractor = 1 OS スレッド（pthread）**。
+Ruby のスレッドモデルは版によって変化してきた:
 
-ユーザーレベルのグリーンスレッドではなく OS に直接マッピングされる。このため:
-- 生成コストはシステムコールレベル（`pthread_create`、スタック確保）
-- Ractor 数がコア数を大きく超えると OS スケジューラの競合でスループットが低下
-- biryani の最適点 `-c25 -m50`（1,300 Ractors）でも 4コア環境でオーバーサブスクリプションが起きる
+| 時期 | モデル | 説明 |
+|------|--------|------|
+| Ruby 1.8 以前 | M:1 | M Ruby スレッドを 1 OS スレッドで処理（グリーンスレッド） |
+| Ruby 1.9〜3.2 | 1:1 | 1 Ruby スレッド = 1 OS スレッド |
+| Ruby 3.3〜 | M:N | M Ruby スレッドを N OS スレッドで処理 |
+
+Ruby 3.3 から導入された **M:N スケジューラ**（goroutine スケジューラに着想）では:
+- **非 main Ractor**: M:N スケジューラがデフォルトで有効（無効化不可）
+- **main Ractor**: デフォルトは 1:1。`RUBY_MN_THREADS=1` で M:N を有効化
+- N（OS スレッド数）は `RUBY_MAX_CPU` で指定、デフォルトは **8**
+
+（ソース: `doc/NEWS/NEWS-3.3.0.md:457`, `thread_pthread.c:1160`）
+
+### SNT（Shared Native Thread）
+
+M:N モードで使われる共有 OS スレッド。
+
+```
+SNT-1 ─── Ractor-A のスレッド
+       └── Ractor-B のスレッド（A がブロック中に実行）
+       └── Ractor-C のスレッド（...）
+
+SNT-2 ─── Ractor-D のスレッド
+       └── ...
+```
+
+> "Ruby threads from different ractors can even run on the same SNT."
+> — `doc/contributing/glossary.md`
+
+Ruby スレッドはコンテキストスイッチのたびに SNT を乗り換えることができる。
+ブロッキング I/O 発生時は epoll/kqueue（Linux: `USE_MN_THREADS=1` が epoll で有効化）が
+完了を検知し、次の Ruby スレッドを SNT に載せる。
+
+### biryani への影響
+
+biryani の `-c25 -m50` では 1,300 の非 main Ractor が起動する。
+M:N モードではこれらは **最大 8 OS スレッド（+ ブロッキング操作用の追加スレッド）** を共有する。
+「1,300 Ractors = 1,300 OS スレッド」ではない。
+
+ただし FlameGraph では `thread_create_core` が 5〜10% 現れており、
+実際に多くの OS スレッドが生成されていることを示している。ブロッキング I/O（`IO#read` 47.9%）
+のたびに追加の OS スレッドが生成される可能性があり、要調査。
 
 ## ライフサイクル
 
@@ -214,11 +252,11 @@ Ractor-shareable なオブジェクト（参照共有可能）:
 
 | 特性 | 内容 |
 |------|------|
-| 生成コスト | `pthread_create` + スタック確保 ≒ OS スレッドの生成コスト |
+| 生成コスト | Ruby スレッド生成 + SNT への登録（M:N 下では OS スレッド生成より軽い） |
 | wall time | biryani 実測で `Ractor.new` 0.0%（I/O 待機に比べて無視できる） |
-| CPU 時間 | perf 実測で ~5-10%（`thread_create_core` + `nt_alloc_stack`） |
+| CPU 時間 | perf 実測で ~5-10%（`thread_create_core` + `nt_alloc_stack`） ※要因は調査中 |
 | 同期 | 1 send = 1 `pthread_cond_broadcast` = 1 futex syscall |
-| 最適 Ractor 数 | 4コア環境で ~1,000〜1,500（biryani `-c25 -m50` = 1,300 Ractors） |
+| OS スレッド数 | M:N モード、デフォルト N=8（`RUBY_MAX_CPU`）+ ブロッキング操作用追加スレッド |
 
 ## 関連ページ
 

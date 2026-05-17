@@ -31,6 +31,9 @@ perf + FlameGraph。Ractor 生成 ~12%、futex 同期 ~16%、GC ~11%、unknown 2
 ## [2026-05-17] benchmark | baseline-default
 4,981 req/s（-n10000 -c50 -m100 -t10）。全リクエスト成功。レイテンシ 866ms mean / sd 240ms — ストリーム多重化によるキューイング遅延を仮説。
 
+## [2026-05-17] internals | M:N スレッドスケジューラの発見
+「1 Ractor = 1 OS スレッド」は誤りと判明。Ruby 3.3 以降、非 main Ractor は M:N スケジューラを使用（デフォルト有効）。M Ruby スレッドを N OS スレッド（デフォルト N=8）で処理。biryani の 1,300 Ractors ≠ 1,300 OS threads。FlameGraph の thread_create_core の解釈が要再調査。
+
 ## [2026-05-17] internals | ractor-overview
 Ractor 全体像ページを新設。OS スレッドマッピング（1 Ractor=1 pthread）・ライフサイクル（created/running/blocking/terminated）・共有モデル（copy/move/shareable）・Ruby 4.0 Port API・エラー体系・パフォーマンス特性を整理。
 
