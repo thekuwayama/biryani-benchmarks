@@ -2,56 +2,77 @@
 
 最終更新: 2026-05-17
 
+**ゴール**: ruby/ruby の Ractor にパフォーマンスに関する issue 報告または改善 PR でコントリビュートする。
+
+---
+
 ## 現時点の理解
 
-### スループットと `-m` の関係（2026-05-17）
+### アーキテクチャ
 
-`-m` スイープ（m=1〜100、-c50 固定）の結果：
+biryani は接続ごとに 2 Ractors（Connection + recv_loop）＋ストリームごとに 1 Ractor（Stream）を生成する。プールなし・使い捨て設計。`-c50 -m100` で最大 5,100 Ractors。
 
-| `-m` | req/s | latency mean |
-|------|-------|--------------|
-| 1    | 1,140 | 43ms  |
-| 5    | 4,596 | 53ms  |
-| 10   | 5,198 | 94ms  |
-| 25   | 5,562 | 212ms |
-| **50**  | **6,183** | 354ms |
-| 100  | 5,984 | 718ms |
+詳細: [[internals/ractor-architecture]], [[internals/ractor-port-implementation]]
 
-**ピークスループットは `-m50`（6,183 req/s）**。`-m100` では逆に低下。4 コア環境で 5,100 Ractor は過剰であり、OS スケジューラのオーバーサブスクリプションが発生。
+### スループット特性
 
-**レイテンシは `-m` に線形比例**。1送信 = 1 `pthread_cond_broadcast` = 1 futex syscall が根本原因（[[internals/ractor-port-implementation]] 参照）。
-
-### biryani の Ractor 構造
-
-接続ごとに 2 Ractor（Connection + recv_loop）＋ストリームごとに 1 Ractor（Stream）を生成。プールなし。`-c50 -m100` で最大 5,100 Ractor（[[internals/ractor-architecture]] 参照）。
-
-### `-c` スイープ結果（-m50 固定）
-
-| `-c` | 同時 Ractors | req/s |
+| 構成 | 同時 Ractors | req/s |
 |------|------------|-------|
-| 10   | 520        | 7,489 |
-| **25**   | **1,300**  | **7,695**（全体最高） |
-| 50   | 2,600      | 6,811 |
-| 100  | 5,200      | 6,247 |
+| -c50 -m100（デフォルト） | 5,100 | 4,981 |
+| -c25 -m50（最適） | **1,300** | **7,695** |
+| -c10 -m50 | 520 | 7,489 |
+| -c50 -m50 | 2,600 | 6,811 |
 
-**現時点の最高スループットは `-c25 -m50`（7,695 req/s）**。4 コア環境での最適 Ractor 数は 1,000〜1,500 程度と推測。
+4コア環境での最適 Ractor 数は 1,000〜1,500 程度。それを超えると OS スケジューラのオーバーサブスクリプションでスループットが低下する。
 
-### rperf wall プロファイルの発見（2026-05-17）
+### Wall time の内訳（rperf、-c25 -m50）
 
-**biryani は I/O バウンド**。rperf wall モードで計測すると：
-- `IO#read`: 47.9%（ソケット読み込み待ち）
-- `Ractor.select`: 33.5%（イベントループ待機）
-- `IO#write`: 14.6%（レスポンス書き込み）
-- `Ractor.new`: **0.0%**（Ractor 生成は wall time でほぼゼロ）
+```
+IO#read          47.9%  ← ソケット読み込み待ち（I/O バウンド）
+Ractor.select    33.5%  ← イベントループ待機
+IO#write         14.6%  ← レスポンス書き込み
+Ractor.new        0.0%  ← Ractor 生成は wall time でほぼゼロ
+```
 
-perf の CPU プロファイルで「重い」と見えたスレッド生成・futex は CPU 時間の問題であり、wall time の問題ではなかった。（[[findings/rperf-wall-vs-perf-cpu]] 参照）
+**biryani は I/O バウンド**。Ractor 生成・同期は wall time のボトルネックではない。
+
+詳細: [[findings/rperf-wall-vs-perf-cpu]]
+
+### CPU の内訳（perf、-c25 -m50）
+
+スレッド生成 ~10%、futex 同期 ~11%、GC ~8%、Ruby VM 実行 ~14%、unknown ~24%
+
+CPU 時間では Ractor 生成（OS スレッド生成）と futex が目立つが、wall time では無視できる。perf と rperf は相補的なツール。
+
+詳細: [[findings/flamegraph-c25-m50-vs-baseline]]
+
+### Ractor::Port の仕組み
+
+1 送信 = 1 `pthread_cond_broadcast` = 1 futex syscall（`ractor_sync.c`）。
+メッセージは共通 `recv_queue` に着信し、Ractor 起床後に per-port キューへ振り分けられる。
+
+詳細: [[internals/ractor-port-implementation]]
+
+---
 
 ## 未解決の疑問
 
-- `-c25 -m50` でのレイテンシ特性と FlameGraph（Ractor 数が減った場合の futex 比率の変化）
-- GC はどのようなタイミングで発生し、POST ボディ追加でどう変わるか
-- Ractor プールを実装すればスレッド生成コスト（~12%）をどれだけ削減できるか
-- `-t` を CPU コア数（4）に合わせると h2load 側のノイズが減るか
+詳細は [[questions/README]] 参照。
+
+1. `Ractor.select` の 33.5% の内訳（recv vs stream 応答待ちの比率）
+2. `IO#read` 47.9% — ノンブロッキング I/O の採用可否
+3. Ractor プールの効果（wall time ではゼロだが CPU は削減できるか）
+4. `pthread_cond_broadcast` の条件付き最適化の余地
+
+---
+
+## コントリビュート候補
+
+詳細は [[contributions/README]] 参照。
+
+現時点では候補なし。上記の疑問を深掘りして根拠を固める。
+
+---
 
 ## 関連ページ
 

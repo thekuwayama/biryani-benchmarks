@@ -4,6 +4,9 @@
 
 ---
 
+## [2026-05-17] meta | ゴール再定義
+ruby/ruby Ractor へのコントリビュートを目標に設定。wiki に questions/ と contributions/ を追加。5ステップのサイクル（ソースリーディング→ベンチマーク→プロファイラ→テストシナリオ→議論）を設計。
+
 ## [2026-05-17] profile | rperf-wall-c25-m50
 rperf wall モード。IO#read 47.9%、Ractor.select 33.5%、IO#write 14.6%、Ractor.new 0.0%。biryani は I/O バウンドと判明。
 
