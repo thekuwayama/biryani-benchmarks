@@ -12,8 +12,6 @@ tags: [finding]
 | perf + FlameGraph | ✅ 動作 | sudo 必要、C フレームレベル、unknown 24% |
 | rperf wall モード | ✅ 動作 | sudo 不要、Ruby メソッドレベル、GVL/GC ラベル付き |
 
-Vernier のクラッシュはサンプリングフックが Ractor のスレッド状態に触れることで発生。`rb_find_object_id` → `rb_wb_protected_newobj_of` → Ractor 境界違反のパターン。
-
 ## rperf wall モード結果（-c25 -m50）
 
 ### Flat（関数単体の wall time）
@@ -90,7 +88,6 @@ biryani のボトルネックは **I/O 待機**であり、Ractor の生成・�
 
 1. `IO#read` の 47.9% を削減できるか — ノンブロッキング I/O の採用可否
 2. `Ractor.select` の 33.5% の内訳 — recv_loop と stream 応答の比率
-3. Vernier の Ractor クラッシュを issue として報告する価値がある（ko1 と jhawthron の両者に関連）
 
 ## 関連ページ
 
