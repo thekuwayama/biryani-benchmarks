@@ -12,7 +12,7 @@
 
 biryani は接続ごとに 2 Ractors（Connection + recv_loop）＋ストリームごとに 1 Ractor（Stream）を生成する。プールなし・使い捨て設計。`-c50 -m100` で最大 5,100 Ractors。
 
-詳細: [[internals/biryani-ractor-architecture]], [[internals/ractor-port-implementation]]
+詳細: [internals/biryani-ractor-architecture](internals/biryani-ractor-architecture.md), [internals/ractor-port-implementation](internals/ractor-port-implementation.md)
 
 ### スループット特性
 
@@ -36,7 +36,7 @@ Ractor.new        0.0%  ← Ractor 生成は wall time でほぼゼロ
 
 **biryani は I/O バウンド**。Ractor 生成・同期は wall time のボトルネックではない。
 
-詳細: [[findings/rperf-wall-vs-perf-cpu]]
+詳細: [findings/rperf-wall-vs-perf-cpu](findings/rperf-wall-vs-perf-cpu.md)
 
 ### CPU の内訳（perf、-c25 -m50）
 
@@ -44,20 +44,20 @@ Ractor.new        0.0%  ← Ractor 生成は wall time でほぼゼロ
 
 CPU 時間では Ractor 生成（OS スレッド生成）と futex が目立つが、wall time では無視できる。perf と rperf は相補的なツール。
 
-詳細: [[findings/flamegraph-c25-m50-vs-baseline]]
+詳細: [findings/flamegraph-c25-m50-vs-baseline](findings/flamegraph-c25-m50-vs-baseline.md)
 
 ### Ractor::Port の仕組み
 
 1 送信 = 1 `pthread_cond_broadcast` = 1 futex syscall（`ractor_sync.c`）。
 メッセージは共通 `recv_queue` に着信し、Ractor 起床後に per-port キューへ振り分けられる。
 
-詳細: [[internals/ractor-port-implementation]]
+詳細: [internals/ractor-port-implementation](internals/ractor-port-implementation.md)
 
 ---
 
 ## 未解決の疑問
 
-詳細は [[questions/README]] 参照。
+詳細は [questions/README](questions/README.md) 参照。
 
 1. `Ractor.select` の 33.5% の内訳（recv vs stream 応答待ちの比率）
 2. `IO#read` 47.9% — ノンブロッキング I/O の採用可否
@@ -68,7 +68,7 @@ CPU 時間では Ractor 生成（OS スレッド生成）と futex が目立つ�
 
 ## コントリビュート候補
 
-詳細は [[contributions/README]] 参照。
+詳細は [contributions/README](contributions/README.md) 参照。
 
 現時点では候補なし。上記の疑問を深掘りして根拠を固める。
 
@@ -76,4 +76,4 @@ CPU 時間では Ractor 生成（OS スレッド生成）と futex が目立つ�
 
 ## 関連ページ
 
-- [[log]]
+- [log](log.md)

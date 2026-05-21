@@ -31,11 +31,11 @@ Raw sources: `raw/flamegraph_c25_m50.svg`（比較元: `raw/flamegraph_baseline.
 
 ### Ractor 生成コストの半減
 
-`thread_create_core` + `native_thread_create` + `nt_alloc_stack` の合計はベースラインで ~18%、-c25 -m50 では ~10% に低下。これは同時ストリーム数の減少（最大 5,000 → 1,250）に比例しており、[[internals/biryani-ractor-architecture]] で確認した「ストリームごとに Ractor 生成」の設計と一致する。
+`thread_create_core` + `native_thread_create` + `nt_alloc_stack` の合計はベースラインで ~18%、-c25 -m50 では ~10% に低下。これは同時ストリーム数の減少（最大 5,000 → 1,250）に比例しており、[internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md) で確認した「ストリームごとに Ractor 生成」の設計と一致する。
 
 ### futex オーバーヘッドは依然として高い（~11%）
 
-Ractor 数を 4 分の 1 にしても futex 比率は 16% → 11% の低下に留まる。[[internals/ractor-port-implementation]] で確認したように、1 メッセージ送信 = 1 `pthread_cond_broadcast` であり、リクエスト数（10,000 固定）に比例する部分があるため、Ractor 数だけでは大きく削減できない。
+Ractor 数を 4 分の 1 にしても futex 比率は 16% → 11% の低下に留まる。[internals/ractor-port-implementation](../internals/ractor-port-implementation.md) で確認したように、1 メッセージ送信 = 1 `pthread_cond_broadcast` であり、リクエスト数（10,000 固定）に比例する部分があるため、Ractor 数だけでは大きく削減できない。
 
 ### GC は微減（~11% → ~8%）
 
@@ -58,8 +58,8 @@ Ractor 数を 74% 削減 → スループット +54%、vm_exec_core +40%。オ�
 
 ## 関連ページ
 
-- [[findings/flamegraph-baseline-cpu-profile]]
-- [[scenarios/sweep-c-parameter]]
-- [[scenarios/sweep-m-parameter]]
-- [[internals/biryani-ractor-architecture]]
-- [[internals/ractor-port-implementation]]
+- [findings/flamegraph-baseline-cpu-profile](flamegraph-baseline-cpu-profile.md)
+- [scenarios/sweep-c-parameter](../scenarios/sweep-c-parameter.md)
+- [scenarios/sweep-m-parameter](../scenarios/sweep-m-parameter.md)
+- [internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md)
+- [internals/ractor-port-implementation](../internals/ractor-port-implementation.md)

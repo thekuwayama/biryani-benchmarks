@@ -80,7 +80,7 @@ dedicated SNT になると `native_thread_dedicated_inc`（`thread_pthread.c:100
 スレッドは `rb_native_cond_wait(&th->nt->cond.readyq, ...)` で眠る。
 I/O 完了時に `rb_native_cond_signal(&th->nt->cond.readyq)` で起こされる。
 
-**biryani との関係**: `IO#read` が 47.9%（wall time）を占めるため、dedicated SNT の確保・解放が頻繁に発生する。FlameGraph の futex ~11% の主因。→ [[findings/futex-mn-scheduler-dedicated-nt]]
+**biryani との関係**: `IO#read` が 47.9%（wall time）を占めるため、dedicated SNT の確保・解放が頻繁に発生する。FlameGraph の futex ~11% の主因。→ [findings/futex-mn-scheduler-dedicated-nt](../findings/futex-mn-scheduler-dedicated-nt.md)
 
 ### biryani への影響
 
@@ -288,8 +288,8 @@ Ractor-shareable なオブジェクト（参照共有可能）:
 
 ## 関連ページ
 
-- [[internals/biryani-ractor-architecture]] — biryani がこれをどう使うか
-- [[internals/ractor-port-implementation]] — Port と recv_queue の C 実装詳細
-- [[internals/ractor-sync-wakeup]] — wakeup メカニズム（broadcast/signal 問題）
-- [[findings/rperf-wall-vs-perf-cpu]] — 実測データ（wall time vs CPU time）
-- [[contributions/cond-signal-vs-broadcast]] — PR 候補
+- [internals/biryani-ractor-architecture](biryani-ractor-architecture.md) — biryani がこれをどう使うか
+- [internals/ractor-port-implementation](ractor-port-implementation.md) — Port と recv_queue の C 実装詳細
+- [internals/ractor-sync-wakeup](ractor-sync-wakeup.md) — wakeup メカニズム（broadcast/signal 問題）
+- [findings/rperf-wall-vs-perf-cpu](../findings/rperf-wall-vs-perf-cpu.md) — 実測データ（wall time vs CPU time）
+- [contributions/cond-signal-vs-broadcast](../contributions/cond-signal-vs-broadcast.md) — PR 候補

@@ -92,7 +92,7 @@ biryani では `IO#read` が頻発するため、この補充が継続的に発�
 
 ## 関連ページ
 
-- [[internals/ractor-overview]]（SNT の概要）
-- [[findings/futex-mn-scheduler-dedicated-nt]]（futex ~11% の真因）
-- [[findings/flamegraph-c25-m50-vs-baseline]]（FlameGraph の実測値）
-- [[questions/README]]（Q5・Q6）
+- [internals/ractor-overview](ractor-overview.md)（SNT の概要）
+- [findings/futex-mn-scheduler-dedicated-nt](../findings/futex-mn-scheduler-dedicated-nt.md)（futex ~11% の真因）
+- [findings/flamegraph-c25-m50-vs-baseline](../findings/flamegraph-c25-m50-vs-baseline.md)（FlameGraph の実測値）
+- [questions/README](../questions/README.md)（Q5・Q6）

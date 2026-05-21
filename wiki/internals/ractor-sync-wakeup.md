@@ -63,7 +63,7 @@ if (!closed) {
 Win32 ブロック内の `rb_ractor_sched_wakeup` では `th` 引数が無視されている。
 これは Win32 のみに影響し、Linux ベンチマーク環境には関係しない。
 
-→ [[contributions/cond-signal-vs-broadcast]]（クローズ済み）
+→ [contributions/cond-signal-vs-broadcast](../contributions/cond-signal-vs-broadcast.md)（クローズ済み）
 
 ## 発見 B: `ractor_wakeup_all` が N 人のウェイターに N 回 wakeup を呼ぶ
 
@@ -125,7 +125,7 @@ struct {
 
 ## 関連ページ
 
-- [[internals/ractor-port-implementation]]
-- [[findings/rperf-wall-vs-perf-cpu]]
-- [[questions/README]]
-- [[contributions/cond-signal-vs-broadcast]]
+- [internals/ractor-port-implementation](ractor-port-implementation.md)
+- [findings/rperf-wall-vs-perf-cpu](../findings/rperf-wall-vs-perf-cpu.md)
+- [questions/README](../questions/README.md)
+- [contributions/cond-signal-vs-broadcast](../contributions/cond-signal-vs-broadcast.md)

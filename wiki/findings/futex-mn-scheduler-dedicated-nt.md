@@ -70,7 +70,7 @@ Ractor ごとの `sync.wakeup_cond` ではない（Win32 除く）。
 
 ## 関連ページ
 
-- [[findings/rperf-wall-vs-perf-cpu]]
-- [[internals/ractor-sync-wakeup]]
-- [[internals/ractor-overview]]
-- [[contributions/cond-signal-vs-broadcast]]
+- [findings/rperf-wall-vs-perf-cpu](rperf-wall-vs-perf-cpu.md)
+- [internals/ractor-sync-wakeup](../internals/ractor-sync-wakeup.md)
+- [internals/ractor-overview](../internals/ractor-overview.md)
+- [contributions/cond-signal-vs-broadcast](../contributions/cond-signal-vs-broadcast.md)

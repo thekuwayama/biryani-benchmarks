@@ -44,7 +44,7 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 
 ### パフォーマンスの根拠
 
-- `-c25 -m50` FlameGraph: `futex` 系が CPU の ~11%（`[[findings/flamegraph-c25-m50-vs-baseline]]`）
+- `-c25 -m50` FlameGraph: `futex` 系が CPU の ~11%（[findings/flamegraph-c25-m50-vs-baseline](../findings/flamegraph-c25-m50-vs-baseline.md)）
 - `pthread_cond_broadcast` は Linux NPTL では `FUTEX_REQUEUE` を使い、mutex 待ちキューへ全ウェイターを移動する
 - `pthread_cond_signal` は `FUTEX_WAKE 1` のみ — 実行コストが軽い
 - biryani ベンチマーク: 10,000 req × ~1 wakeup/req ≒ 10,000 回の broadcast → signal 変換効果
@@ -64,7 +64,7 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 | `raw/ruby-src/ractor_sync.c` | 1013-1028 | `ubf_ractor_wait`（呼び出し元） |
 | `raw/ruby-src/thread_pthread.c` | 205-213 | `rb_native_cond_signal` 定義 |
 
-詳細分析: [[internals/ractor-sync-wakeup]]
+詳細分析: [internals/ractor-sync-wakeup](../internals/ractor-sync-wakeup.md)
 
 ## クローズ理由（2026-05-17 追記）
 
@@ -85,7 +85,7 @@ rb_ractor_sched_wakeup(r, r_th)           # thread_pthread.c:1366
 - すでに `signal`（broadcast ではない）
 - per-Ractor ではなく per-SNT（Shared Native Thread）の条件変数
 
-FlameGraph の futex ~11% の真因は Ractor send ではなく、ブロッキング I/O による dedicated SNT の `cond_signal` / `cond_wait`。→ [[findings/futex-mn-scheduler-dedicated-nt]]
+FlameGraph の futex ~11% の真因は Ractor send ではなく、ブロッキング I/O による dedicated SNT の `cond_signal` / `cond_wait`。→ [findings/futex-mn-scheduler-dedicated-nt](../findings/futex-mn-scheduler-dedicated-nt.md)
 
 ## 関連する ruby/ruby のコード（正確な版）
 

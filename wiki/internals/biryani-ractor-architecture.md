@@ -121,6 +121,6 @@ end
 
 ## 関連ページ
 
-- [[findings/flamegraph-baseline-cpu-profile]]
-- [[findings/latency-stream-multiplexing]]
-- [[scenarios/baseline-default]]
+- [findings/flamegraph-baseline-cpu-profile](../findings/flamegraph-baseline-cpu-profile.md)
+- [findings/latency-stream-multiplexing](../findings/latency-stream-multiplexing.md)
+- [scenarios/baseline-default](../scenarios/baseline-default.md)

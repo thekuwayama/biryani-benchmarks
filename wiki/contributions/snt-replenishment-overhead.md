@@ -40,7 +40,7 @@ SNT が 1 本でも dedicated になると即座に補充が走る設計。
 - rperf wall（-c25 -m50）: `IO#read` 47.9% — blocking I/O が頻発
 - 合算して M:N 管理オーバーヘッドは CPU の ~21%（`thread_create_core` ~10% + futex ~11%）
 
-詳細: [[findings/futex-mn-scheduler-dedicated-nt]], [[internals/ractor-mn-snt-lifecycle]]
+詳細: [findings/futex-mn-scheduler-dedicated-nt](../findings/futex-mn-scheduler-dedicated-nt.md), [internals/ractor-mn-snt-lifecycle](../internals/ractor-mn-snt-lifecycle.md)
 
 ## 改善アイデア
 

@@ -51,7 +51,7 @@ const int default_max_cpu = 8; // TODO: CPU num?
 Linux/macOS/BSD でアフィニティを考慮した CPU 数を返す（`etc.c:1098`）。
 同等の C コードは `thread_pthread.c` に追加可能。
 
-詳細: [[scenarios/sweep-ruby-max-cpu]]
+詳細: [scenarios/sweep-ruby-max-cpu](../scenarios/sweep-ruby-max-cpu.md)
 
 ## 変更量
 

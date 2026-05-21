@@ -64,8 +64,8 @@ tags: [scenario]
 
 ## 関連ページ
 
-- [[scenarios/baseline-default]]
-- [[findings/latency-stream-multiplexing]]
-- [[internals/biryani-ractor-architecture]]
-- [[internals/ractor-port-implementation]]
-- [[overview]]
+- [scenarios/baseline-default](baseline-default.md)
+- [findings/latency-stream-multiplexing](../findings/latency-stream-multiplexing.md)
+- [internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md)
+- [internals/ractor-port-implementation](../internals/ractor-port-implementation.md)
+- [overview](../overview.md)

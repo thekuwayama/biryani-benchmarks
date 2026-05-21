@@ -6,7 +6,7 @@ tags: [question]
 # Questions — ruby/ruby に問いたい疑問
 
 ここには ruby/ruby の Ractor 実装に関する未解決の疑問を記録する。
-十分に裏付けが取れたものは `[[contributions/]]` に昇格させる。
+十分に裏付けが取れたものは [contributions/](../contributions/) に昇格させる。
 
 ## 未解決の疑問リスト
 
@@ -20,11 +20,11 @@ tags: [question]
 `native_thread_check_and_create_shared` が `pthread_create` で新 SNT を生成。
 biryani の高 I/O 頻度によりこのサイクルが連続する。
 
-詳細: [[internals/ractor-mn-snt-lifecycle]]
+詳細: [internals/ractor-mn-snt-lifecycle](../internals/ractor-mn-snt-lifecycle.md)
 
-コントリビュート候補: [[contributions/snt-replenishment-overhead]]
+コントリビュート候補: [contributions/snt-replenishment-overhead](../contributions/snt-replenishment-overhead.md)
 
-関連: [[internals/ractor-overview]], [[findings/flamegraph-c25-m50-vs-baseline]]
+関連: [internals/ractor-overview](../internals/ractor-overview.md), [findings/flamegraph-c25-m50-vs-baseline](../findings/flamegraph-c25-m50-vs-baseline.md)
 
 
 
@@ -35,14 +35,14 @@ rperf wall モードで `-c25 -m50` を計測すると `Ractor.select` が wall 
 - Stream Ractor からのレスポンス待機か
 - その比率はどうか
 
-関連: [[findings/rperf-wall-vs-perf-cpu]], [[internals/biryani-ractor-architecture]]
+関連: [findings/rperf-wall-vs-perf-cpu](../findings/rperf-wall-vs-perf-cpu.md), [internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md)
 
 ### Q2: `IO#read` の 47.9% はブロッキング I/O か
 
 biryani はノンブロッキング I/O を使っていないため、47.9% がソケット読み込み待ちになっている。
 Ractor とノンブロッキング I/O の組み合わせは可能か？ 仮に `io_uring` や `epoll` を使えば構造的に変わるか？
 
-関連: [[findings/rperf-wall-vs-perf-cpu]]
+関連: [findings/rperf-wall-vs-perf-cpu](../findings/rperf-wall-vs-perf-cpu.md)
 
 ### Q3: Ractor プールは実装可能か、効果があるか
 
@@ -51,7 +51,7 @@ perf の CPU プロファイルでは Ractor 生成（スレッド生成）が ~
 
 wall time ではほぼゼロだが、CPU サイクルを消費している。Ractor をプールして再利用すれば CPU 効率が上がるか？ ruby/ruby の Ractor は使い捨て前提の設計か？
 
-関連: [[internals/biryani-ractor-architecture]], [[findings/flamegraph-c25-m50-vs-baseline]]
+関連: [internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md), [findings/flamegraph-c25-m50-vs-baseline](../findings/flamegraph-c25-m50-vs-baseline.md)
 
 ### Q4: `pthread_cond_broadcast` を避けられるか（→ クローズ：誤分析）
 
@@ -62,16 +62,16 @@ wall time ではほぼゼロだが、CPU サイクルを消費している。Rac
 **Linux (pthread) では走らない。** pthread 版は `thread_pthread.c:1366` で `r_th` を直接使い、
 M:N スケジューラ経由で `rb_native_cond_signal`（すでに signal）を発行する。
 
-→ `[[contributions/cond-signal-vs-broadcast]]` はクローズ。
+→ [contributions/cond-signal-vs-broadcast](../contributions/cond-signal-vs-broadcast.md) はクローズ。
 
 ### Q6: dedicated SNT の生成コストを下げられるか
 
 FlameGraph の futex ~11% は Ractor send ではなく、ブロッキング I/O による dedicated SNT の
-`pthread_cond_wait` / `signal` が出所（`[[findings/futex-mn-scheduler-dedicated-nt]]`）。
+`pthread_cond_wait` / `signal` が出所（[findings/futex-mn-scheduler-dedicated-nt](../findings/futex-mn-scheduler-dedicated-nt.md)）。
 
 - `IO#read` のたびに `native_thread_dedicated_inc` → dedicated SNT を確保する
 - biryani の 1,300 Ractors × 複数回 IO#read = 大量の SNT 切り替え
 - dedicated SNT の再利用 / プール化は可能か？
 - ノンブロッキング I/O（io_uring / epoll）を使えば dedicated SNT を避けられるか？
 
-関連: [[internals/ractor-sync-wakeup]], [[findings/futex-mn-scheduler-dedicated-nt]]
+関連: [internals/ractor-sync-wakeup](../internals/ractor-sync-wakeup.md), [findings/futex-mn-scheduler-dedicated-nt](../findings/futex-mn-scheduler-dedicated-nt.md)

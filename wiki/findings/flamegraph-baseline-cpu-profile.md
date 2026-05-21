@@ -48,6 +48,6 @@ Raw source: `raw/flamegraph_baseline.svg`
 
 ## 関連ページ
 
-- [[scenarios/baseline-default]]
-- [[findings/latency-stream-multiplexing]]
-- [[overview]]
+- [scenarios/baseline-default](../scenarios/baseline-default.md)
+- [findings/latency-stream-multiplexing](latency-stream-multiplexing.md)
+- [overview](../overview.md)

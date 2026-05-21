@@ -93,7 +93,7 @@ biryani のボトルネックは **I/O 待機**であり、Ractor の生成・�
 
 ## 関連ページ
 
-- [[findings/flamegraph-baseline-cpu-profile]]
-- [[findings/flamegraph-c25-m50-vs-baseline]]
-- [[internals/biryani-ractor-architecture]]
-- [[internals/ractor-port-implementation]]
+- [findings/flamegraph-baseline-cpu-profile](flamegraph-baseline-cpu-profile.md)
+- [findings/flamegraph-c25-m50-vs-baseline](flamegraph-c25-m50-vs-baseline.md)
+- [internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md)
+- [internals/ractor-port-implementation](../internals/ractor-port-implementation.md)

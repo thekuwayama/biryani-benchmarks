@@ -50,7 +50,7 @@ tags: [scenario|finding|internals|question|contribution]
 
 ## 関連ページ
 
-- [[ページ名]]
+- [ページ名](相対パス.md)
 ```
 
 ## 図の規約
@@ -59,7 +59,9 @@ wiki ページに図が必要な場合は **Mermaid** を使う。ただし呼�
 
 ## クロスリファレンス規約
 
-- wiki ページ間: `[[ページ名]]`（`wiki/` からの相対パス、拡張子なし）
+- wiki ページ間: GitHub で動作する相対 Markdown リンク `[表示名](相対パス.md)`
+  - 同ディレクトリ: `[foo](foo.md)`
+  - 親ディレクトリ: `[bar](../findings/bar.md)`
 - raw ファイルへの参照: `raw/flamegraph_c25_m50.svg` のようにパスで記述
 
 ## ワークフロー詳細

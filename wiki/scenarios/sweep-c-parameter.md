@@ -73,7 +73,7 @@ tags: [scenario]
 
 ## 関連ページ
 
-- [[scenarios/sweep-m-parameter]]
-- [[scenarios/baseline-default]]
-- [[internals/biryani-ractor-architecture]]
-- [[overview]]
+- [scenarios/sweep-m-parameter](sweep-m-parameter.md)
+- [scenarios/baseline-default](baseline-default.md)
+- [internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md)
+- [overview](../overview.md)

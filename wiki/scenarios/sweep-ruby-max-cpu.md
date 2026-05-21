@@ -53,6 +53,6 @@ Ruby 開発者自身が物理 CPU 数に合わせるべきか検討している�
 
 ## 関連ページ
 
-- [[scenarios/sweep-c-parameter]]（-c25 -m50 が最適と分かったシナリオ）
-- [[internals/ractor-mn-snt-lifecycle]]（SNT 補充ロジックの詳細）
-- [[contributions/default-max-cpu-cpu-count]]（この結果から生まれた PR 候補）
+- [scenarios/sweep-c-parameter](sweep-c-parameter.md)（-c25 -m50 が最適と分かったシナリオ）
+- [internals/ractor-mn-snt-lifecycle](../internals/ractor-mn-snt-lifecycle.md)（SNT 補充ロジックの詳細）
+- [contributions/default-max-cpu-cpu-count](../contributions/default-max-cpu-cpu-count.md)（この結果から生まれた PR 候補）
