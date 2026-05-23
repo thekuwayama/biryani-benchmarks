@@ -1,6 +1,5 @@
-GIT
-  remote: https://github.com/thekuwayama/biryani.git
-  revision: 8753e5ae123861d0e6ea42b8c53f677612f2f237
+PATH
+  remote: raw/biryani
   specs:
     biryani (0.0.12)
 

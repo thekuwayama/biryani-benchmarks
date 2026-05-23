@@ -15,6 +15,7 @@
 | パス | 種別 | 説明 |
 |-----|------|------|
 | `raw/ruby-src/` | リポジトリ | ruby/ruby v4.0.2 ソース（git submodule） |
+| `raw/biryani/` | リポジトリ | biryani ソース（git submodule、Gemfile path: 参照） |
 | `raw/flamegraphs/flamegraph_<シナリオ>.svg` | 画像 | perf + FlameGraph による CPU プロファイル |
 | `raw/profiles/rperf_<シナリオ>_wall.json.gz` | データセット | rperf による Ruby レベル wall time プロファイル |
 

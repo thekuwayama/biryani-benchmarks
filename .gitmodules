@@ -4,3 +4,6 @@
 [submodule "ruby-src"]
 	path = raw/ruby-src
 	url = https://github.com/ruby/ruby.git
+[submodule "raw/biryani"]
+	path = raw/biryani
+	url = https://github.com/thekuwayama/biryani.git
