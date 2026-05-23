@@ -39,6 +39,7 @@ flowchart LR
 | ベンチマークツール | `h2load`（nghttp2）— HTTP/2 ロードジェネレータ |
 | プロファイラ | `perf` + `FlameGraph`（CPU）、`rperf`（Ruby メソッドレベル、wall time） |
 | ruby/ruby ソース | `raw/ruby-src/`（v4.0.2 サブモジュール）— `ractor.c`, `ractor_sync.c`, `thread_pthread.c` など |
+| biryani ソース | `raw/biryani/`（v0.0.12 サブモジュール、Gemfile も `path:` で参照）— アーキテクチャ調査時に読む |
 | Wiki | `wiki/` — Claude が書き、ユーザーが読む |
 
 ## Wiki の構造
@@ -61,7 +62,8 @@ wiki/
 
 ruby/ruby の Ractor 関連ソースを調査するとき：
 
-- 対象ファイル: `raw/ruby-src/ractor.c`, `raw/ruby-src/ractor_sync.c`, `raw/ruby-src/thread_pthread.c`, `raw/ruby-src/vm_core.h`
+- 対象ファイル（ruby/ruby）: `raw/ruby-src/ractor.c`, `raw/ruby-src/ractor_sync.c`, `raw/ruby-src/thread_pthread.c`, `raw/ruby-src/vm_core.h`
+- 対象ファイル（biryani）: `raw/biryani/lib/` 以下 — Ractor アーキテクチャや I/O パターンを調査するとき
 - 調査結果を `wiki/internals/<トピック>.md` に記録する
 - 発見がベンチマーク結果と結びつくなら `[[findings/...]]` とクロスリファレンスを張る
 - 「なぜそう実装されているか」を問い、仮説を `wiki/questions/` に追記する
