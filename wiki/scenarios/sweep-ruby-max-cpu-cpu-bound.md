@@ -52,6 +52,7 @@ tags: [scenario]
 gantt
     title I/O バウンド（cpu=8）— SNT の時間配分（概念図）
     dateFormat X
+    axisFormat %s
 
     section SNT-1〜4（稼働中）
     IO#read 待機（約 90%）: done,   0, 9
@@ -67,6 +68,7 @@ gantt
 gantt
     title CPU バウンド — 1コアの使われ方比較（概念図）
     dateFormat X
+    axisFormat %s
 
     section cpu=4（最適）
     SNT 専有: active, 0, 10
