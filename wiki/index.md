@@ -55,7 +55,7 @@
 
 ## コントリビュート候補
 
-- [contributions/default-max-cpu-cpu-count](contributions/default-max-cpu-cpu-count.md) — **★ PR 提出準備完了**: `default_max_cpu=8` → 物理 CPU 数に変更（I/O バウンド +3.1%・CPU バウンド +5.5%・両ワークロードで優位確認）
+- [contributions/default-max-cpu-cpu-count](contributions/default-max-cpu-cpu-count.md) — **★ 変更案確定・PR 提出待ち**: `default_max_cpu=8` → 物理 CPU 数に変更（I/O +3.1%・CPU +5.5%・変更後コード確定）
 - [contributions/snt-replenishment-overhead](contributions/snt-replenishment-overhead.md) — **候補**: SNT 補充の頻繁な pthread_create を削減（CPU ~10%）
 
 ### クローズ済み

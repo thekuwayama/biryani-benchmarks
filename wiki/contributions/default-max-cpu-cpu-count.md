@@ -1,9 +1,8 @@
 ---
 date: 2026-05-17
 updated: 2026-05-23
-status_updated: 2026-05-23
 type: pr
-status: 調査完了・実装待ち
+status: 変更案確定・PR 提出待ち
 ---
 
 # `default_max_cpu` を物理 CPU 数に変更する
@@ -17,13 +16,16 @@ status: 調査完了・実装待ち
 // 現在（thread_pthread.c:1735）
 const int default_max_cpu = 8; // TODO: CPU num?
 
-// 提案（etc.c:1014 のパターンに倣う）
+// 提案
 #if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
-    const int default_max_cpu = (int)sysconf(_SC_NPROCESSORS_ONLN);
+    long nprocessors = sysconf(_SC_NPROCESSORS_ONLN);
+    const int default_max_cpu = (nprocessors > 0) ? (int)nprocessors : 8;
 #else
-    const int default_max_cpu = 8; // fallback for platforms without sysconf
+    const int default_max_cpu = 8;
 #endif
 ```
+
+`etc.c:1115` が `sysconf(_SC_NPROCESSORS_ONLN)` の戻り値を明示的にチェックしており（`-1` で `rb_sys_fail`）、Ruby チームがエラーを想定済みと判断。`thread_pthread.c` は VM 初期化コンテキストのため `rb_sys_fail` は使えないが、`-1` を `max_cpu` に使うと SNT 補充条件（`thread_pthread_mn.c:421`）が壊れるため、`8` へのフォールバックを追加。
 
 コメント `// TODO: CPU num?` は **ko1（Koichi Sasada）が M:N スケジューラ初回実装時に自分で書いた**
 （commit `be1bbd5b7`、2023-04-10）。2 年以上放置されており、PR を出す根拠として強い。
@@ -112,9 +114,32 @@ thread_pthread.c では Win32 分岐は不要なので `HAVE_SYSCONF && _SC_NPRO
 
 詳細: [scenarios/sweep-ruby-max-cpu](../scenarios/sweep-ruby-max-cpu.md)
 
+## 変更後のコード
+
+`thread_pthread.c` の `ruby_mn_threads_params()` 内、変更箇所のみ抜粋：
+
+```c
+// before
+    const char *max_cpu_cstr = getenv("RUBY_MAX_CPU");
+    const int default_max_cpu = 8; // TODO: CPU num?
+    int max_cpu = default_max_cpu;
+
+// after
+    const char *max_cpu_cstr = getenv("RUBY_MAX_CPU");
+#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
+    long nprocessors = sysconf(_SC_NPROCESSORS_ONLN);
+    const int default_max_cpu = (nprocessors > 0) ? (int)nprocessors : 8;
+#else
+    const int default_max_cpu = 8;
+#endif
+    int max_cpu = default_max_cpu;
+```
+
+変更量: 1 行削除 → 5 行に展開（`#if` ブロック）。
+
 ## 変更量
 
-`thread_pthread.c:1735` の 1 行変更 → `#if` による 3 行に展開。
+`thread_pthread.c:1735` の 1 行変更 → `#if` による 5 行に展開。
 
 ## 懸念点
 
