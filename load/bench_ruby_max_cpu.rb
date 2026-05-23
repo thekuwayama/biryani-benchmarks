@@ -12,7 +12,7 @@ N    = 10_000
 C    = 25
 M    = 50
 T    = 10
-CPUS = [1, 2, 4, 8, 16, 32].freeze
+CPUS = [nil, 1, 2, 4, 8, 16, 32].freeze  # nil = RUBY_MAX_CPU 未設定（default_max_cpu=8 のパス）
 
 SERVER_SCRIPT = <<~RUBY
   require 'socket'
@@ -33,10 +33,15 @@ RUBY
 $stderr.puts "RUBY_MAX_CPU sweep (-c#{C} -m#{M} -n#{N} -t#{T})"
 
 CPUS.each do |cpu|
-  $stderr.puts "\n=== RUBY_MAX_CPU=#{cpu} ==="
+  label = cpu.nil? ? "(unset)" : cpu.to_s
+  $stderr.puts "\n=== RUBY_MAX_CPU=#{label} ==="
 
   pid = fork do
-    ENV['RUBY_MAX_CPU'] = cpu.to_s
+    if cpu.nil?
+      ENV.delete('RUBY_MAX_CPU')
+    else
+      ENV['RUBY_MAX_CPU'] = cpu.to_s
+    end
     exec RbConfig.ruby, '-e', SERVER_SCRIPT
   end
 
