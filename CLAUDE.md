@@ -15,8 +15,8 @@
 | パス | 種別 | 説明 |
 |-----|------|------|
 | `raw/ruby-src/` | リポジトリ | ruby/ruby v4.0.2 ソース（git submodule） |
-| `raw/flamegraph_<シナリオ>.svg` | 画像 | perf + FlameGraph による CPU プロファイル |
-| `raw/rperf_<シナリオ>_wall.json.gz` | データセット | rperf による Ruby レベル wall time プロファイル |
+| `raw/flamegraphs/flamegraph_<シナリオ>.svg` | 画像 | perf + FlameGraph による CPU プロファイル |
+| `raw/profiles/rperf_<シナリオ>_wall.json.gz` | データセット | rperf による Ruby レベル wall time プロファイル |
 
 `raw/*.data`（perf バイナリ）は `.gitignore` で除外。
 
@@ -62,7 +62,7 @@ wiki ページに図が必要な場合は **Mermaid** を使う。ただし呼�
 - wiki ページ間: GitHub で動作する相対 Markdown リンク `[表示名](相対パス.md)`
   - 同ディレクトリ: `[foo](foo.md)`
   - 親ディレクトリ: `[bar](../findings/bar.md)`
-- raw ファイルへの参照: `raw/flamegraph_c25_m50.svg` のようにパスで記述
+- raw ファイルへの参照: `raw/flamegraphs/flamegraph_c25_m50.svg` のようにパスで記述
 
 ## ワークフロー詳細
 

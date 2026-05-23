@@ -93,11 +93,11 @@ limactl shell --workdir /biryani-benchmarks lima bash -c 'eval "$(rbenv init -)"
 limactl shell --workdir /biryani-benchmarks lima bash -c '
   eval "$(rbenv init -)"
   bundle exec ruby load/profile_rperf.rb
-  rperf report --top raw/rperf_c25_m50_wall.json.gz
+  rperf report --top raw/profiles/rperf_c25_m50_wall.json.gz
 '
 ```
 
-結果は `raw/rperf_<シナリオ>_wall.json.gz` に保存される。
+結果は `raw/profiles/rperf_<シナリオ>_wall.json.gz` に保存される。
 
 **perf + FlameGraph（OS/C レベル）**:
 ```bash
@@ -107,12 +107,12 @@ limactl shell --workdir /biryani-benchmarks lima bash -c '
     -m 512M -o /tmp/perf.data bundle exec ruby load/<スクリプト>.rb
   sudo perf script -i /tmp/perf.data \
     | ./FlameGraph/stackcollapse-perf.pl \
-    | ./FlameGraph/flamegraph.pl > raw/flamegraph_<シナリオ>.svg
+    | ./FlameGraph/flamegraph.pl > raw/flamegraphs/flamegraph_<シナリオ>.svg
 '
-open raw/flamegraph_<シナリオ>.svg
+open raw/flamegraphs/flamegraph_<シナリオ>.svg
 ```
 
-結果は `raw/flamegraph_<シナリオ>.svg` に保存される。プロファイラ結果は `wiki/findings/<名前>.md` に記録する。
+結果は `raw/flamegraphs/flamegraph_<シナリオ>.svg` に保存される。プロファイラ結果は `wiki/findings/<名前>.md` に記録する。
 
 ### 4. テストシナリオ検討
 
