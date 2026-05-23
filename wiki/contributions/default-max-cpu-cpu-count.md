@@ -70,7 +70,20 @@ sysconf(_SC_PAGESIZE)  // ガードなし → このファイルが使われる�
 よって `#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)` のガードは必須。
 「`sysconf` の使用前例がある」は正しいが、「ガードなしで使える」は誤り。
 
-- `thread_pthread.c` は POSIX 専用（Win32 は `thread_win32.c`）なので `_WIN32` fallback 不要
+**Windows について**:
+
+`thread_win32.c` にも `ruby_mn_threads_params` は存在するが、中身は空実装：
+
+```c
+// thread_win32.c:210
+void
+ruby_mn_threads_params(void)
+{
+}
+```
+
+Windows は M:N スケジューラが無効（`USE_MN_THREADS=0`）なので `default_max_cpu` のコード自体が実行されない。
+よって今回の変更（`thread_pthread.c` のみ）は Windows に影響しない。`_WIN32` fallback 不要。
 
 **guard パターンの先例**（`ext/etc/etc.c:1014`）:
 ```c
