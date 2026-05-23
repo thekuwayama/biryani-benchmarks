@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "deny": [
+      "Bash(gh pr create*)",
+      "Bash(gh issue create*)"
+    ]
+  }
+}
