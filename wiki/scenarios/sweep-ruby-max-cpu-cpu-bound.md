@@ -42,6 +42,67 @@ tags: [scenario]
 
 両ワークロードで cpu=4 が優位。`default_max_cpu` を物理コア数にする変更は I/O バウンド・CPU バウンドの両方に有効。
 
+### なぜ CPU バウンドの方が差が大きいか
+
+差の違い（+3.1% vs +5.5%）は、**余分な SNT（cpu=8 の SNT 5〜8 本目）が何をしているか**で説明できる。
+
+**I/O バウンドの場合**、SNT のほとんどは `pthread_cond_wait` で眠っている。余分な SNT は起きていないのでコアを奪い合わず、コンテキストスイッチの害は小さい。
+
+```mermaid
+gantt
+    title I/O バウンド（cpu=8）— SNT タイムライン
+    dateFormat X
+    axisFormat %L ms
+
+    section SNT-1
+    IO#read 待機 : done, 0, 800
+    実行          : active, 800, 900
+    IO#read 待機 : done, 900, 1700
+
+    section SNT-2
+    IO#read 待機 : done, 100, 900
+    実行          : active, 900, 1000
+    IO#read 待機 : done, 1000, 1800
+
+    section SNT-5〜8（余分）
+    眠り中 : crit, 0, 1800
+```
+
+**CPU バウンドの場合**、SNT は常に計算で忙しく、全員が「今すぐ CPU をくれ」と競合する。cpu=8 では 8 本の SNT が 4 コアを奪い合い、OS が頻繁にコンテキストスイッチを行う。
+
+```mermaid
+gantt
+    title CPU バウンド（cpu=8, 4コア）— コアタイムライン
+    dateFormat X
+    axisFormat %L ms
+
+    section Core-1
+    SNT-1 : active, 0, 250
+    SNT-5 : done,   250, 500
+    SNT-1 : active, 500, 750
+    SNT-5 : done,   750, 1000
+
+    section Core-2
+    SNT-2 : active, 0, 250
+    SNT-6 : done,   250, 500
+    SNT-2 : active, 500, 750
+    SNT-6 : done,   750, 1000
+
+    section Core-3
+    SNT-3 : active, 0, 250
+    SNT-7 : done,   250, 500
+    SNT-3 : active, 500, 750
+    SNT-7 : done,   750, 1000
+
+    section Core-4
+    SNT-4 : active, 0, 250
+    SNT-8 : done,   250, 500
+    SNT-4 : active, 500, 750
+    SNT-8 : done,   750, 1000
+```
+
+I/O バウンドより大きな差（+5.5% vs +3.1%）になるのはこの構造的な違いによる。
+
 ## 関連ページ
 
 - [scenarios/sweep-ruby-max-cpu](sweep-ruby-max-cpu.md) — I/O バウンド版スイープ
