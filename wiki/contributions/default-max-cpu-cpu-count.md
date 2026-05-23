@@ -49,8 +49,27 @@ const int default_max_cpu = 8; // TODO: CPU num?
 
 ### コードの根拠（2026-05-23 調査済み）
 
-**`sysconf` は既に同ファイル群で使用済み**:
-- `thread_pthread_mn.c:135`: `sysconf(_SC_PAGESIZE)` をガードなしで使用
+**`sysconf` の使用状況と注意点**:
+
+`thread_pthread_mn.c:135` で `sysconf(_SC_PAGESIZE)` がガードなしで使われているが、
+これはそのファイル自体が `USE_MN_THREADS=1`（Linux/macOS のみ）のときだけコンパイルされるから。
+
+```c
+// thread_pthread_mn.c の先頭
+#if USE_MN_THREADS   ← Linux(epoll) / macOS(kqueue) のみ
+...
+sysconf(_SC_PAGESIZE)  // ガードなし → このファイルが使われる環境では必ず利用可能
+```
+
+`USE_MN_THREADS` の定義（`thread_pthread.c:77-91`）:
+- `HAVE_SYS_EPOLL_H`（Linux）→ 1
+- `HAVE_SYS_EVENT_H`（macOS/BSD）→ 1
+- Emscripten / COROUTINE_PTHREAD_CONTEXT / s390x-linux / その他 → 0
+
+一方、**変更対象の `thread_pthread.c` は全 POSIX プラットフォームでコンパイルされる**。
+よって `#if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)` のガードは必須。
+「`sysconf` の使用前例がある」は正しいが、「ガードなしで使える」は誤り。
+
 - `thread_pthread.c` は POSIX 専用（Win32 は `thread_win32.c`）なので `_WIN32` fallback 不要
 
 **guard パターンの先例**（`ext/etc/etc.c:1014`）:
