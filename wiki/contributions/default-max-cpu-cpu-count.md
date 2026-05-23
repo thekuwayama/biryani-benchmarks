@@ -2,7 +2,8 @@
 date: 2026-05-17
 updated: 2026-05-23
 type: pr
-status: 変更案確定・PR 提出待ち
+status: 提出済み
+pr: https://github.com/ruby/ruby/pull/17100
 ---
 
 # `default_max_cpu` を物理 CPU 数に変更する

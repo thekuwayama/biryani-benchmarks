@@ -4,6 +4,11 @@
 
 ---
 
+## [2026-05-23] contribution | default_max_cpu PR 提出
+https://github.com/ruby/ruby/pull/17100
+
+---
+
 ## [2026-05-23] benchmark | RUBY_MAX_CPU 未設定の挙動確認
 `bench_ruby_max_cpu.rb` に `nil`（未設定）ケースを追加して再実行。未設定（7,155 req/s）と =8（7,479 req/s）の差は 4% で、run-to-run ノイズ（=8 が回間で 9% 変動）の範囲内。コードパス（`default_max_cpu = 8` → `vm->ractor.sched.max_cpu = 8`）を実測で確認。未設定と明示的 =8 は同等の挙動。
 
