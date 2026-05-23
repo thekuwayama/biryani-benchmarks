@@ -4,6 +4,9 @@
 
 ---
 
+## [2026-05-23] contribution | default_max_cpu PR 調査完了
+git shallow を 2023-01-01 以降まで拡張し `git log -S "TODO: CPU num"` を実行。TODO は ko1（Koichi Sasada）が M:N 初回実装時（commit be1bbd5b7, 2023-04-10）に自分で書いたと判明。2年以上放置。sysconf は thread_pthread_mn.c で既に使用済み。guard パターンは ext/etc/etc.c が先例。実装方針確定。残作業: CPU バウンドベンチマーク + PR 提出。
+
 ## [2026-05-23] finding | Q3 解決 — Ractor プールは可能だが thread_create_core への効果は限定的
 ループ型 Ractor プールは実装可能。idle Ractor は M:N スケジューラが SNT を解放するため占有しない。ただし thread_create_core ~10% の原因は IO#read → native_thread_dedicated_inc → snt_cnt-- の連鎖であり、Stream Ractor.new を減らしても補充頻度は変わらない。GC 軽減への寄与は軽微（未定量）。
 
