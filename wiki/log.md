@@ -4,6 +4,9 @@
 
 ---
 
+## [2026-05-23] finding | Q3 解決 — Ractor プールは可能だが thread_create_core への効果は限定的
+ループ型 Ractor プールは実装可能。idle Ractor は M:N スケジューラが SNT を解放するため占有しない。ただし thread_create_core ~10% の原因は IO#read → native_thread_dedicated_inc → snt_cnt-- の連鎖であり、Stream Ractor.new を減らしても補充頻度は変わらない。GC 軽減への寄与は軽微（未定量）。
+
 ## [2026-05-23] internals | Ractor.select の C 実装を完全解明
 `ractor_selector__wait`（ractor_sync.c:1420）は毎 wakeup で全ポートを `ractor_try_receive` でポール → メッセージなければ `ractor_wait_receive` → `rb_ractor_sched_wait`（thread_pthread.c:1330）で M:N スケジューラに入る。Linux 版と Win32 版で実装が異なる（`#ifdef RUBY_THREAD_PTHREAD_H`）。
 

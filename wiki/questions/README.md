@@ -52,14 +52,16 @@ Ractor とノンブロッキング I/O の組み合わせは可能か？ 仮に 
 
 関連: [findings/rperf-wall-vs-perf-cpu](../findings/rperf-wall-vs-perf-cpu.md)
 
-### Q3: Ractor プールは実装可能か、効果があるか
+### Q3: Ractor プールは実装可能か、効果があるか（→ 解決）
 
-perf の CPU プロファイルでは Ractor 生成（スレッド生成）が ~10%。
-ただし rperf wall では `Ractor.new` は 0.0%。
+**回答**（2026-05-23）:
 
-wall time ではほぼゼロだが、CPU サイクルを消費している。Ractor をプールして再利用すれば CPU 効率が上がるか？ ruby/ruby の Ractor は使い捨て前提の設計か？
+- **実装は可能**: ループ型 Ractor（`loop { Ractor.recv; ... }`）で実現できる。idle 時は M:N スケジューラが SNT を解放するため、プール Ractor は SNT を占有しない。
+- **thread_create_core ~10% への効果は限定的**: SNT 補充の必要性を作るのは `IO#read` → `native_thread_dedicated_inc` → `snt_cnt--` の連鎖。Stream Ractor.new を減らしても IO#read は変わらないため、補充頻度はほぼ変わらない。
+- **GC ~8% への軽微な効果**: 短命 Ractor オブジェクトの減少で若干改善する可能性（未定量）。
+- **ruby/ruby の設計思想**: M:N スケジューラで使い捨てコストを吸収する設計。プールは application-level の最適化。
 
-関連: [internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md), [findings/flamegraph-c25-m50-vs-baseline](../findings/flamegraph-c25-m50-vs-baseline.md)
+詳細: [findings/ractor-pool-feasibility](../findings/ractor-pool-feasibility.md)
 
 ### Q4: `pthread_cond_broadcast` を避けられるか（→ クローズ：誤分析）
 

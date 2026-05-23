@@ -31,6 +31,7 @@
 - [findings/futex-mn-scheduler-dedicated-nt](findings/futex-mn-scheduler-dedicated-nt.md) — futex ~11% の真因：ブロッキング I/O → dedicated SNT の cond_signal/wait
 - [findings/ractor-select-wait-breakdown](findings/ractor-select-wait-breakdown.md) — **Q1 解答**: Ractor.select 33.5% はブロッキング I/O との並行待機（構造的必然）
 - [findings/rperf-concurrent-vs-parallel](findings/rperf-concurrent-vs-parallel.md) — rperf の計測モデル：各 Ractor 独立の並行計測であり、実時間（並列）の重複を含む
+- [findings/ractor-pool-feasibility](findings/ractor-pool-feasibility.md) — **Q3 解答**: Ractor プールは実装可能。ただし thread_create_core ~10% への効果は限定的（原因は IO#read）
 
 ---
 
@@ -47,7 +48,7 @@
 
 ## 未解決の疑問
 
-- [questions/README](questions/README.md) — Q1〜Q6（Q1・Q4・Q5 解決済み。Q3: Ractor プール可否。Q6: SNT 補充コストを下げられるか）
+- [questions/README](questions/README.md) — Q1〜Q6（Q1・Q3・Q4・Q5 解決済み。Q2: IO#read ノンブロッキング化。Q6: SNT 補充コストを下げられるか）
 
 ---
 
