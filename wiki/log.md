@@ -4,6 +4,9 @@
 
 ---
 
+## [2026-05-23] benchmark | CPU バウンドベンチマーク完了 — default_max_cpu PR 根拠確定
+整数演算 50k iters/req のハンドラで RUBY_MAX_CPU スイープ。cpu=4（物理コア数）が 1,317 req/s でピーク。cpu=8（現デフォルト）は 1,244 req/s（-5.5%）。I/O バウンド（+3.1%）より差が大きい。両ワークロードで物理コア数が最適と確認。PR 提出の根拠が揃った。
+
 ## [2026-05-23] contribution | default_max_cpu PR 調査完了
 git shallow を 2023-01-01 以降まで拡張し `git log -S "TODO: CPU num"` を実行。TODO は ko1（Koichi Sasada）が M:N 初回実装時（commit be1bbd5b7, 2023-04-10）に自分で書いたと判明。2年以上放置。sysconf は thread_pthread_mn.c で既に使用済み。guard パターンは ext/etc/etc.c が先例。実装方針確定。残作業: CPU バウンドベンチマーク + PR 提出。
 

@@ -1,6 +1,7 @@
 ---
 date: 2026-05-17
 updated: 2026-05-23
+status_updated: 2026-05-23
 type: pr
 status: 調査完了・実装待ち
 ---
@@ -29,7 +30,7 @@ const int default_max_cpu = 8; // TODO: CPU num?
 
 ## 根拠
 
-### ベンチマーク（biryani, Lima VM 4コア, -c25 -m50）
+### ベンチマーク — I/O バウンド（biryani, Lima VM 4コア, -c25 -m50）
 
 | RUBY_MAX_CPU | req/s | 対デフォルト比 |
 |---|---|---|
@@ -38,8 +39,21 @@ const int default_max_cpu = 8; // TODO: CPU num?
 | 16 | 6,732 | -18.0% |
 | 32 | 4,652 | -43.3% |
 
-- 物理コア数（4）と一致するときにピーク
-- 超えるほど急速に性能劣化
+詳細: [scenarios/sweep-ruby-max-cpu](../scenarios/sweep-ruby-max-cpu.md)
+
+### ベンチマーク — CPU バウンド（biryani, Lima VM 4コア, 整数演算 50k iters/req）
+
+| RUBY_MAX_CPU | req/s | 対デフォルト比 |
+|---|---|---|
+| 4（物理コア数） | 1,317 | **+5.5%** |
+| 8（現在のデフォルト） | 1,244 | 基準 |
+| 16 | 1,155 | -7.2% |
+
+- CPU バウンドでも物理コア数（4）でピーク
+- I/O バウンドより差が大きい（+5.5% vs +3.1%）
+- **両ワークロードで cpu=物理コア数が優位** — 変更の安全性が確認された
+
+詳細: [scenarios/sweep-ruby-max-cpu-cpu-bound](../scenarios/sweep-ruby-max-cpu-cpu-bound.md)
 
 ### 理論的根拠
 
@@ -104,14 +118,14 @@ thread_pthread.c では Win32 分岐は不要なので `HAVE_SYSCONF && _SC_NPRO
 
 ## 懸念点
 
-- **CPU バウンドワークロードでの影響**: 計算集中型では現行デフォルト 8 が良い場合も（未測定）
-- **I/O バウンド vs CPU バウンド**: biryani は I/O バウンドだが、すべてのアプリがそうではない
+- **CPU バウンドワークロードでの影響**: ~~未測定~~ → **測定済み。cpu=4 が +5.5% 優位**（2026-05-23）
+- **I/O バウンド vs CPU バウンド**: 両方とも物理コア数でピーク。懸念解消
 - **後方互換性**: `RUBY_MAX_CPU` 環境変数で上書き可能なので既存ユーザーへの影響は限定的
 - **コンテナ環境**: `sysconf(_SC_NPROCESSORS_ONLN)` は cgroups / CPU affinity を考慮し、割り当て済み CPU 数を返す。コンテナ親和的
 
 ## 次のステップ
 
-1. CPU バウンドなベンチマークでも `cpu=物理コア数` vs `cpu=8` を比較する（PR の根拠強化）
+1. ~~CPU バウンドなベンチマークでも比較する~~ → **完了（2026-05-23、cpu=4 が +5.5%）**
 2. ruby/ruby に PR を提出する
    - タイトル候補: `Use nprocessors as default_max_cpu for M:N scheduler`
    - 対象ブランチ: `master`

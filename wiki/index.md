@@ -18,7 +18,8 @@
 - [scenarios/baseline-default](scenarios/baseline-default.md) — デフォルト（-c50 -m100）: 4,981 req/s、latency 866ms
 - [scenarios/sweep-m-parameter](scenarios/sweep-m-parameter.md) — `-m` スイープ（1〜100）: ピーク m=50、6,183 req/s。レイテンシは m に線形比例
 - [scenarios/sweep-c-parameter](scenarios/sweep-c-parameter.md) — `-c` スイープ（10〜100、m=50 固定）: ピーク c=25、7,695 req/s（全体最高）
-- [scenarios/sweep-ruby-max-cpu](scenarios/sweep-ruby-max-cpu.md) — **RUBY_MAX_CPU スイープ**: ピーク cpu=4（物理コア数）、8,456 req/s。デフォルト8より+3%
+- [scenarios/sweep-ruby-max-cpu](scenarios/sweep-ruby-max-cpu.md) — **RUBY_MAX_CPU スイープ（I/O バウンド）**: ピーク cpu=4、8,456 req/s。デフォルト8より+3.1%
+- [scenarios/sweep-ruby-max-cpu-cpu-bound](scenarios/sweep-ruby-max-cpu-cpu-bound.md) — **RUBY_MAX_CPU スイープ（CPU バウンド）**: ピーク cpu=4、1,317 req/s。デフォルト8より+5.5%
 
 ---
 
@@ -54,7 +55,7 @@
 
 ## コントリビュート候補
 
-- [contributions/default-max-cpu-cpu-count](contributions/default-max-cpu-cpu-count.md) — **★ 調査完了・実装待ち**: `default_max_cpu=8` → 物理 CPU 数に変更（ko1 の TODO・実測 +3%・実装方針確定）
+- [contributions/default-max-cpu-cpu-count](contributions/default-max-cpu-cpu-count.md) — **★ PR 提出準備完了**: `default_max_cpu=8` → 物理 CPU 数に変更（I/O バウンド +3.1%・CPU バウンド +5.5%・両ワークロードで優位確認）
 - [contributions/snt-replenishment-overhead](contributions/snt-replenishment-overhead.md) — **候補**: SNT 補充の頻繁な pthread_create を削減（CPU ~10%）
 
 ### クローズ済み
