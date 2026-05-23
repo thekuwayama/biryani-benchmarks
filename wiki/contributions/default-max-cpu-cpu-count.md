@@ -101,6 +101,29 @@ ruby_mn_threads_params(void)
 Windows は M:N スケジューラが無効（`USE_MN_THREADS=0`）なので `default_max_cpu` のコード自体が実行されない。
 よって今回の変更（`thread_pthread.c` のみ）は Windows に影響しない。`_WIN32` fallback 不要。
 
+**`_SC_NPROCESSORS_ONLN` について**:
+
+`_SC_NPROCESSORS_ONLN` は環境変数ではなく、`sysconf()` に渡す POSIX 定数。
+「誰かが設定する」ものではなく、OS カーネルに問い合わせるインターフェース。
+
+```c
+long nprocessors = sysconf(_SC_NPROCESSORS_ONLN);
+//                 ^^^^^^^ システムコール（カーネルへの問い合わせ）
+//                         返り値: 現在 online な CPU 数、エラー時 -1
+```
+
+Linux カーネルは CPU コアを online / offline の状態で管理する。
+- **online**: スケジューラが使用中（プロセスを割り当てられる）
+- **offline**: 省電力・ホットプラグ等で意図的に無効化されている
+
+`_SC_NPROCESSORS_ONLN` は online なコアの数のみを返す。
+`_SC_NPROCESSORS_CONF`（設定上の全コア数）ではなく `ONLN` を選ぶ理由：
+offline コアが存在する環境（サーバーのホットプラグ、組み込み等）で
+CONF は過大な値を返すが、ONLN は実際に使えるコア数を返す。
+
+通常の環境（デスクトップ・サーバー・Lima VM）では
+全コアが常時 online のため両者は一致する。
+
 **guard パターンの先例**（`ext/etc/etc.c:1014`）:
 ```c
 #if (defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)) || defined(_WIN32)
@@ -146,7 +169,7 @@ thread_pthread.c では Win32 分岐は不要なので `HAVE_SYSCONF && _SC_NPRO
 - **CPU バウンドワークロードでの影響**: ~~未測定~~ → **測定済み。cpu=4 が +5.5% 優位**（2026-05-23）
 - **I/O バウンド vs CPU バウンド**: 両方とも物理コア数でピーク。懸念解消
 - **後方互換性**: `RUBY_MAX_CPU` 環境変数で上書き可能なので既存ユーザーへの影響は限定的
-- **コンテナ環境**: `sysconf(_SC_NPROCESSORS_ONLN)` は cgroups / CPU affinity を考慮し、割り当て済み CPU 数を返す。コンテナ親和的
+- **コンテナ環境**: cgroup v2（モダンな Linux）では `sysconf(_SC_NPROCESSORS_ONLN)` が cgroup で割り当てられた CPU 数を返すためコンテナ親和的。cgroup v1 や古い glibc ではホストの全 CPU 数を返す場合があり過大になるリスクがある。ただし `RUBY_MAX_CPU` 環境変数で上書きできるため致命的ではない
 
 ## 次のステップ
 
