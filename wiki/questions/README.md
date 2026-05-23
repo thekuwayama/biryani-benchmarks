@@ -28,14 +28,22 @@ biryani の高 I/O 頻度によりこのサイクルが連続する。
 
 
 
-### Q1: `Ractor.select` の 33.5% は何を待っているのか
+### Q1: `Ractor.select` の 33.5% は何を待っているのか（→ 解決）
 
-rperf wall モードで `-c25 -m50` を計測すると `Ractor.select` が wall time の 33.5% を占める。この待機時間の内訳を知りたい：
-- recv_loop から来るフレーム受信の待機か
-- Stream Ractor からのレスポンス待機か
-- その比率はどうか
+**回答**（2026-05-23）:
 
-関連: [findings/rperf-wall-vs-perf-cpu](../findings/rperf-wall-vs-perf-cpu.md), [internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md)
+**主因**: recv_loop の `IO#read` がブロックしている間、select_loop も `Ractor.select` で並行待機している時間。
+両者は異なる Ractor で動くため wall time はそれぞれに独立してカウントされる。
+
+**副因**: Stream Ractor のレスポンス待機（`proc.call` が trivial なため寄与は微小）。
+
+C 実装では `ractor_selector__wait`（ractor_sync.c:1420）が毎 wakeup でポートを全スキャンし、
+メッセージがなければ `rb_ractor_sched_wait`（thread_pthread.c:1330）経由で M:N スケジューラに入る。
+これはブロッキング I/O アーキテクチャの **構造的な必然**。
+
+詳細: [findings/ractor-select-wait-breakdown](../findings/ractor-select-wait-breakdown.md)
+
+実装: [internals/ractor-select-implementation](../internals/ractor-select-implementation.md)
 
 ### Q2: `IO#read` の 47.9% はブロッキング I/O か
 

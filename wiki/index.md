@@ -2,7 +2,7 @@
 
 **ゴール**: ruby/ruby の Ractor にパフォーマンス関連のコントリビュートをする。
 
-最終更新: 2026-05-17
+最終更新: 2026-05-23
 
 ---
 
@@ -29,6 +29,8 @@
 - [findings/flamegraph-c25-m50-vs-baseline](findings/flamegraph-c25-m50-vs-baseline.md) — -c25 -m50 で有効 CPU 仕事増（vm_exec_core 10%→14%）
 - [findings/rperf-wall-vs-perf-cpu](findings/rperf-wall-vs-perf-cpu.md) — **大発見**: biryani は I/O バウンド。IO#read 47.9%、Ractor.new 0.0%
 - [findings/futex-mn-scheduler-dedicated-nt](findings/futex-mn-scheduler-dedicated-nt.md) — futex ~11% の真因：ブロッキング I/O → dedicated SNT の cond_signal/wait
+- [findings/ractor-select-wait-breakdown](findings/ractor-select-wait-breakdown.md) — **Q1 解答**: Ractor.select 33.5% はブロッキング I/O との並行待機（構造的必然）
+- [findings/rperf-concurrent-vs-parallel](findings/rperf-concurrent-vs-parallel.md) — rperf の計測モデル：各 Ractor 独立の並行計測であり、実時間（並列）の重複を含む
 
 ---
 
@@ -39,12 +41,13 @@
 - [internals/ractor-port-implementation](internals/ractor-port-implementation.md) — Ractor::Port の C 実装（recv_queue 二段キュー）
 - [internals/ractor-sync-wakeup](internals/ractor-sync-wakeup.md) — wakeup メカニズム精査（Win32 vs pthread 分岐・M:N スケジューラの実際のパス）
 - [internals/ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md) — **Q5 解答**: SNT ライフサイクルと補充ロジック（thread_create_core ~10% の真因）
+- [internals/ractor-select-implementation](internals/ractor-select-implementation.md) — `Ractor.select` の C 実装（ポーリングループ・Linux/Win32 分岐・M:N スケジューラとの接続）
 
 ---
 
 ## 未解決の疑問
 
-- [questions/README](questions/README.md) — Q1〜Q6（Q4・Q5 解決済み。Q6: SNT 補充コストを下げられるか）
+- [questions/README](questions/README.md) — Q1〜Q6（Q1・Q4・Q5 解決済み。Q3: Ractor プール可否。Q6: SNT 補充コストを下げられるか）
 
 ---
 

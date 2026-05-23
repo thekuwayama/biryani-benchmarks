@@ -4,6 +4,17 @@
 
 ---
 
+## [2026-05-23] internals | Ractor.select の C 実装を完全解明
+`ractor_selector__wait`（ractor_sync.c:1420）は毎 wakeup で全ポートを `ractor_try_receive` でポール → メッセージなければ `ractor_wait_receive` → `rb_ractor_sched_wait`（thread_pthread.c:1330）で M:N スケジューラに入る。Linux 版と Win32 版で実装が異なる（`#ifdef RUBY_THREAD_PTHREAD_H`）。
+
+## [2026-05-23] finding | rperf の計測モデル — 並行（各 Ractor 独立）vs 並列（実時間）
+rperf は各 Ractor の視点で wall time をサンプリングする。IO#read と Ractor.select は同じ実時間に別 Ractor で起きるため合算できない。rperf は「各 Ractor が何をしているか」、perf は「システム全体のボトルネック」に向く。
+
+## [2026-05-23] finding | Q1 解決 — Ractor.select 33.5% はブロッキング I/O との並行待機
+select_loop の `Ractor.select` 33.5% wall time は、recv_loop の `IO#read` がブロックしている間の並行待機が主因。2つの Ractor が独立して wall time を消費するため重複してカウントされる。Stream Ractor のレスポンス待機は trivial ハンドラのため寄与微小。構造的必然であり ruby/ruby への直接的な PR 候補にはならない。
+
+---
+
 ## [2026-05-17] benchmark | RUBY_MAX_CPU スイープ（-c25 -m50）
 物理コア数（4）でピーク 8,456 req/s。デフォルト(8)より+3%。16以上で急落(-18%/-43%)。thread_pthread.c:1735 に "TODO: CPU num?" コメント発見。
 
