@@ -50,55 +50,30 @@ tags: [scenario]
 
 ```mermaid
 gantt
-    title I/O バウンド（cpu=8）— SNT タイムライン
+    title I/O バウンド（cpu=8）— SNT の時間配分（概念図）
     dateFormat X
-    axisFormat %L ms
 
-    section SNT-1
-    IO#read 待機 : done, 0, 800
-    実行          : active, 800, 900
-    IO#read 待機 : done, 900, 1700
-
-    section SNT-2
-    IO#read 待機 : done, 100, 900
-    実行          : active, 900, 1000
-    IO#read 待機 : done, 1000, 1800
+    section SNT-1〜4（稼働中）
+    IO#read 待機（約 90%）: done,   0, 9
+    実行（約 10%）         : active, 9, 10
 
     section SNT-5〜8（余分）
-    眠り中 : crit, 0, 1800
+    眠り中（ほぼ 100%）: crit, 0, 10
 ```
 
 **CPU バウンドの場合**、SNT は常に計算で忙しく、全員が「今すぐ CPU をくれ」と競合する。cpu=8 では 8 本の SNT が 4 コアを奪い合い、OS が頻繁にコンテキストスイッチを行う。
 
 ```mermaid
 gantt
-    title CPU バウンド（cpu=8, 4コア）— コアタイムライン
+    title CPU バウンド — 1コアの使われ方比較（概念図）
     dateFormat X
-    axisFormat %L ms
 
-    section Core-1
-    SNT-1 : active, 0, 250
-    SNT-5 : done,   250, 500
-    SNT-1 : active, 500, 750
-    SNT-5 : done,   750, 1000
+    section cpu=4（最適）
+    SNT 専有: active, 0, 10
 
-    section Core-2
-    SNT-2 : active, 0, 250
-    SNT-6 : done,   250, 500
-    SNT-2 : active, 500, 750
-    SNT-6 : done,   750, 1000
-
-    section Core-3
-    SNT-3 : active, 0, 250
-    SNT-7 : done,   250, 500
-    SNT-3 : active, 500, 750
-    SNT-7 : done,   750, 1000
-
-    section Core-4
-    SNT-4 : active, 0, 250
-    SNT-8 : done,   250, 500
-    SNT-4 : active, 500, 750
-    SNT-8 : done,   750, 1000
+    section cpu=8（過多）
+    SNT-X: active, 0, 5
+    SNT-Y: done,   5, 10
 ```
 
 I/O バウンドより大きな差（+5.5% vs +3.1%）になるのはこの構造的な違いによる。
