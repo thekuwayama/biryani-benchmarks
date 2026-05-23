@@ -1,79 +1,134 @@
+---
+date: 2026-05-23
+tags: [overview]
+---
+
 # Overview — Ractor パフォーマンスの総合的理解
 
-最終更新: 2026-05-17
-
-**ゴール**: ruby/ruby の Ractor にパフォーマンスに関する issue 報告または改善 PR でコントリビュートする。
+**ゴール**: ruby/ruby の Ractor にパフォーマンスに関する改善 PR でコントリビュートする。
 
 ---
 
-## 現時点の理解
+## アーキテクチャ
 
-### アーキテクチャ
+biryani は接続ごとに 2 Ractors（Connection + recv_loop）＋ストリームごとに 1 Ractor（Stream）を生成する。プールなし・使い捨て設計。`-c25 -m50` で最大 1,300 Ractors。
 
-biryani は接続ごとに 2 Ractors（Connection + recv_loop）＋ストリームごとに 1 Ractor（Stream）を生成する。プールなし・使い捨て設計。`-c50 -m100` で最大 5,100 Ractors。
+```
+h2load クライアント
+    │ TCP/HTTP2
+    ▼
+Connection Ractor（接続ごと）
+    ├─ recv_loop Ractor — IO#read でフレームを読み込み @sock に送信
+    └─ select_loop — Ractor.select(@sock, @streams_ctx.tx) でディスパッチ
+            ↓ リクエスト完成時
+        Stream Ractor（ストリームごと）— proc.call → tx.send(res)
+```
 
-詳細: [internals/biryani-ractor-architecture](internals/biryani-ractor-architecture.md), [internals/ractor-port-implementation](internals/ractor-port-implementation.md)
+詳細: [internals/biryani-ractor-architecture](internals/biryani-ractor-architecture.md)
 
-### スループット特性
+---
+
+## スループット特性
 
 | 構成 | 同時 Ractors | req/s |
 |------|------------|-------|
 | -c50 -m100（デフォルト） | 5,100 | 4,981 |
 | -c25 -m50（最適） | **1,300** | **7,695** |
-| -c10 -m50 | 520 | 7,489 |
-| -c50 -m50 | 2,600 | 6,811 |
+| -c25 -m50 RUBY_MAX_CPU=4 | 1,300 | **8,456**（+10%） |
 
-4コア環境での最適 Ractor 数は 1,000〜1,500 程度。それを超えると OS スケジューラのオーバーサブスクリプションでスループットが低下する。
+4コア環境での最適 Ractor 数は 1,000〜1,500 程度。オーバーサブスクリプションで急落する。
 
-### Wall time の内訳（rperf、-c25 -m50）
+---
+
+## Wall time の内訳（rperf、-c25 -m50）
 
 ```
-IO#read          47.9%  ← ソケット読み込み待ち（I/O バウンド）
-Ractor.select    33.5%  ← イベントループ待機
+IO#read          47.9%  ← recv_loop がソケット読み込み待ち
+Ractor.select    33.5%  ← select_loop が次のイベント待機
 IO#write         14.6%  ← レスポンス書き込み
 Ractor.new        0.0%  ← Ractor 生成は wall time でほぼゼロ
 ```
 
 **biryani は I/O バウンド**。Ractor 生成・同期は wall time のボトルネックではない。
 
-詳細: [findings/rperf-wall-vs-perf-cpu](findings/rperf-wall-vs-perf-cpu.md)
+`Ractor.select` の 33.5% は `IO#read` がブロックしている間に select_loop も並行して待機する
+**構造的必然**であり、2 つの Ractor の wall time が同じ実時間を別々にカウントする。
+→ rperf の数値は加算できない（[findings/rperf-concurrent-vs-parallel](findings/rperf-concurrent-vs-parallel.md)）
 
-### CPU の内訳（perf、-c25 -m50）
-
-スレッド生成 ~10%、futex 同期 ~11%、GC ~8%、Ruby VM 実行 ~14%、unknown ~24%
-
-CPU 時間では Ractor 生成（OS スレッド生成）と futex が目立つが、wall time では無視できる。perf と rperf は相補的なツール。
-
-詳細: [findings/flamegraph-c25-m50-vs-baseline](findings/flamegraph-c25-m50-vs-baseline.md)
-
-### Ractor::Port の仕組み
-
-1 送信 = 1 `pthread_cond_broadcast` = 1 futex syscall（`ractor_sync.c`）。
-メッセージは共通 `recv_queue` に着信し、Ractor 起床後に per-port キューへ振り分けられる。
-
-詳細: [internals/ractor-port-implementation](internals/ractor-port-implementation.md)
+詳細: [findings/rperf-wall-vs-perf-cpu](findings/rperf-wall-vs-perf-cpu.md),
+[findings/ractor-select-wait-breakdown](findings/ractor-select-wait-breakdown.md)
 
 ---
 
-## 未解決の疑問
+## CPU の内訳（perf、-c25 -m50）
 
-詳細は [questions/README](questions/README.md) 参照。
+```
+thread_create_core  ~10%  ← SNT 補充コスト（IO#read が引き金）
+futex 同期          ~11%  ← ブロッキング I/O による dedicated SNT の cond_signal/wait
+GC                   ~8%
+Ruby VM 実行        ~14%
+unknown             ~24%
+```
 
-1. `Ractor.select` の 33.5% の内訳（recv vs stream 応答待ちの比率）
-2. `IO#read` 47.9% — ノンブロッキング I/O の採用可否
-3. Ractor プールの効果（wall time ではゼロだが CPU は削減できるか）
-4. `pthread_cond_broadcast` の条件付き最適化の余地
+`thread_create_core ~10%` は Ractor.new の直接コストではなく、`IO#read` が dedicated SNT を
+取得するたびに `snt_cnt` が減少し、SNT 補充（`pthread_create`）が走る間接コスト。
+
+詳細: [findings/flamegraph-c25-m50-vs-baseline](findings/flamegraph-c25-m50-vs-baseline.md),
+[internals/ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md)
+
+---
+
+## M:N スケジューラと SNT
+
+Ruby 3.3+ の非 main Ractor は M:N スケジューラを使用。M Ruby スレッドを N OS スレッド（SNT）で処理。
+
+- デフォルト SNT 上限: `default_max_cpu = 8`（`thread_pthread.c:1735`）
+- `IO#read` → dedicated SNT 取得 → `snt_cnt--` → `native_thread_check_and_create_shared` で補充
+- ブロック中の Ractor は SNT を解放して休眠（M:N の恩恵）
+
+詳細: [internals/ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md)
+
+---
+
+## rperf vs perf — ツールの使い分け
+
+| ツール | 視点 | 向いている問い |
+|--------|------|--------------|
+| rperf | 各 Ractor 独立の wall time | 各 Ractor が何をして時間を使っているか |
+| perf + FlameGraph | OS レベルの実時間 CPU 使用 | システム全体のボトルネックはどこか |
+
+rperf は並行計測（重複あり）なので複数 Ractor の数値を合算できない。
+
+---
+
+## 未解決の疑問（抜粋）
+
+| Q | 内容 | 状態 |
+|---|------|------|
+| Q1 | Ractor.select 33.5% の内訳 | **解決**（IO#read との並行待機） |
+| Q2 | IO#read のノンブロッキング化の可否 | 未解決 |
+| Q3 | Ractor プールの効果 | **解決**（thread_create_core への効果は限定的） |
+| Q4 | pthread_cond_broadcast の最適化 | **クローズ**（Linux では走らない） |
+| Q5 | FlameGraph の thread_create_core の解釈 | **解決**（SNT 補充コスト） |
+| Q6 | dedicated SNT のコストを下げられるか | 未解決 |
+
+詳細: [questions/README](questions/README.md)
 
 ---
 
 ## コントリビュート候補
 
-詳細は [contributions/README](contributions/README.md) 参照。
+| 候補 | 状態 | 根拠 |
+|------|------|------|
+| `default_max_cpu` を物理 CPU 数に | **調査完了・実装待ち** | RUBY_MAX_CPU=4 で +3%、ko1 の TODO コメント |
+| SNT 補充オーバーヘッド削減 | 候補 | thread_create_core ~10%、改善案 3 つ |
+| broadcast → signal | **クローズ** | Linux では broadcast は走らない |
 
-現時点では候補なし。上記の疑問を深掘りして根拠を固める。
+詳細: [contributions/](contributions/)
 
 ---
 
 ## 関連ページ
 
-- [log](log.md)
+- [index](index.md) — 全ページカタログ
+- [log](log.md) — セッションの時系列記録

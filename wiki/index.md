@@ -2,7 +2,7 @@
 
 **ゴール**: ruby/ruby の Ractor にパフォーマンス関連のコントリビュートをする。
 
-最終更新: 2026-05-23
+最終更新: 2026-05-23（overview.md 全面更新・index 整理）
 
 ---
 
@@ -54,6 +54,9 @@
 
 ## コントリビュート候補
 
-- [contributions/default-max-cpu-cpu-count](contributions/default-max-cpu-cpu-count.md) — **★ PR 候補**: `default_max_cpu=8` → 物理 CPU 数に変更（TODO コメントあり、実測 +3%）
+- [contributions/default-max-cpu-cpu-count](contributions/default-max-cpu-cpu-count.md) — **★ 調査完了・実装待ち**: `default_max_cpu=8` → 物理 CPU 数に変更（ko1 の TODO・実測 +3%・実装方針確定）
 - [contributions/snt-replenishment-overhead](contributions/snt-replenishment-overhead.md) — **候補**: SNT 補充の頻繁な pthread_create を削減（CPU ~10%）
-- [contributions/cond-signal-vs-broadcast](contributions/cond-signal-vs-broadcast.md) — ~~broadcast → signal~~（クローズ：Win32 ブロック内のみ）
+
+### クローズ済み
+
+- [contributions/cond-signal-vs-broadcast](contributions/cond-signal-vs-broadcast.md) — ~~broadcast → signal~~（前提誤り：Linux では broadcast は走らない）
