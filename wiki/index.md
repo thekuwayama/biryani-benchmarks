@@ -2,7 +2,7 @@
 
 **ゴール**: ruby/ruby の Ractor にパフォーマンス関連のコントリビュートをする。
 
-最終更新: 2026-05-24（SNT_KEEP_SECONDS finding 追加・Q6 調査中・snt-replenishment 更新）
+最終更新: 2026-05-24（SNT_KEEP_SECONDS finding・pool-growth-shrink 図解追加・Q6 調査中）
 
 ---
 
@@ -45,6 +45,7 @@
 - [internals/ractor-sync-wakeup](internals/ractor-sync-wakeup.md) — wakeup メカニズム精査（Win32 vs pthread 分岐・M:N スケジューラの実際のパス）
 - [internals/ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md) — **Q5 解答**: SNT ライフサイクルと補充ロジック（thread_create_core ~10% の真因）
 - [internals/ractor-select-implementation](internals/ractor-select-implementation.md) — `Ractor.select` の C 実装（ポーリングループ・Linux/Win32 分岐・M:N スケジューラとの接続）
+- [internals/mn-snt-pool-growth-shrink](internals/mn-snt-pool-growth-shrink.md) — `max_cpu`（成長上限）と `SNT_KEEP_SECONDS`（縮小速度）の役割と時系列シナリオ（Mermaid 図付き）
 
 ---
 

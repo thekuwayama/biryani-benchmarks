@@ -117,6 +117,7 @@ if (((int)snt_cnt < MINIMUM_SNT) ||   // snt_cnt は unsigned → (int)snt_cnt <
 
 ## 関連ページ
 
+- [internals/mn-snt-pool-growth-shrink](../internals/mn-snt-pool-growth-shrink.md) — max_cpu と SNT_KEEP_SECONDS の役割を Mermaid 図で解説
 - [internals/ractor-mn-snt-lifecycle](../internals/ractor-mn-snt-lifecycle.md)
 - [findings/futex-mn-scheduler-dedicated-nt](futex-mn-scheduler-dedicated-nt.md)
 - [contributions/snt-replenishment-overhead](../contributions/snt-replenishment-overhead.md)
