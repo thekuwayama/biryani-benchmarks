@@ -4,6 +4,14 @@
 
 ---
 
+## [2026-05-24] internals | Ractor-local GC の現状調査（Ruby 4.0.2）
+ko1 RubyKaigi 2025 "Toward Ractor Local GC" をベースにソース調査。
+`_ractor_belonging_id`（RACTOR_CHECK_MODE 専用）と `rb_ractor_newobj_cache_t`（TLAB）は存在するが、
+GC 本体は `gc_enter_event_start` → `rb_gc_vm_barrier()` で全 Ractor STW のまま。
+Ractor-local GC は Ruby 4.0.2 未実装。copy 渡しの「ローカル GC で回収できる」は将来の方向性として正しいが現時点では未達。
+
+---
+
 ## [2026-05-24] finding | SNT_KEEP_SECONDS = 0 — SNT プールが実行時に縮小しない（Q6 調査中）
 
 `default_max_cpu` と同じ commit（be1bbd5b7, ko1）で導入された 3 つの `#ifndef` 定数のうち、

@@ -46,6 +46,7 @@
 - [internals/ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md) — **Q5 解答**: SNT ライフサイクルと補充ロジック（thread_create_core ~10% の真因）
 - [internals/ractor-select-implementation](internals/ractor-select-implementation.md) — `Ractor.select` の C 実装（ポーリングループ・Linux/Win32 分岐・M:N スケジューラとの接続）
 - [internals/mn-snt-pool-growth-shrink](internals/mn-snt-pool-growth-shrink.md) — `max_cpu`（成長上限）と `SNT_KEEP_SECONDS`（縮小速度）の役割と時系列シナリオ（Mermaid 図付き）
+- [internals/ractor-local-gc-status](internals/ractor-local-gc-status.md) — Ractor-local GC の現状（Ruby 4.0.2）：ko1 RubyKaigi 2025 講演との対比、インフラは布石段階、本体は未実装
 
 ---
 
