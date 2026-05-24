@@ -2,7 +2,7 @@
 
 **ゴール**: ruby/ruby の Ractor にパフォーマンス関連のコントリビュートをする。
 
-最終更新: 2026-05-23（overview.md 全面更新・index 整理）
+最終更新: 2026-05-24（SNT_KEEP_SECONDS finding 追加・Q6 調査中・snt-replenishment 更新）
 
 ---
 
@@ -33,6 +33,7 @@
 - [findings/ractor-select-wait-breakdown](findings/ractor-select-wait-breakdown.md) — **Q1 解答**: Ractor.select 33.5% はブロッキング I/O との並行待機（構造的必然）
 - [findings/rperf-concurrent-vs-parallel](findings/rperf-concurrent-vs-parallel.md) — rperf の計測モデル：各 Ractor 独立の並行計測であり、実時間（並列）の重複を含む
 - [findings/ractor-pool-feasibility](findings/ractor-pool-feasibility.md) — **Q3 解答**: Ractor プールは実装可能。ただし thread_create_core ~10% への効果は限定的（原因は IO#read）
+- [findings/snt-keep-seconds-disabled](findings/snt-keep-seconds-disabled.md) — `SNT_KEEP_SECONDS = 0` により SNT プールが実行時に縮小しない（Q6 調査中）
 
 ---
 
@@ -49,14 +50,14 @@
 
 ## 未解決の疑問
 
-- [questions/README](questions/README.md) — Q1〜Q6（Q1・Q3・Q4・Q5 解決済み。Q2: IO#read ノンブロッキング化。Q6: SNT 補充コストを下げられるか）
+- [questions/README](questions/README.md) — Q1〜Q6（Q1・Q3・Q4・Q5 解決済み。Q2: IO#read ノンブロッキック化。Q6: 調査中 — SNT_KEEP_SECONDS が SNT 縮小の鍵）
 
 ---
 
 ## コントリビュート候補
 
 - [contributions/default-max-cpu-cpu-count](contributions/default-max-cpu-cpu-count.md) — **★ 変更案確定・PR 提出待ち**: `default_max_cpu=8` → 物理 CPU 数に変更（I/O +3.1%・CPU +5.5%・変更後コード確定）
-- [contributions/snt-replenishment-overhead](contributions/snt-replenishment-overhead.md) — **候補**: SNT 補充の頻繁な pthread_create を削減（CPU ~10%）
+- [contributions/snt-replenishment-overhead](contributions/snt-replenishment-overhead.md) — **調査中**: SNT 補充の頻繁な pthread_create を削減（CPU ~10%）。SNT_KEEP_SECONDS 有効化が候補案
 
 ### クローズ済み
 

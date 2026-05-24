@@ -1,7 +1,8 @@
 ---
 date: 2026-05-17
+updated: 2026-05-24
 type: issue
-status: 候補
+status: 調査中
 ---
 
 # M:N スケジューラ：SNT 補充コストの削減
@@ -44,6 +45,31 @@ SNT が 1 本でも dedicated になると即座に補充が走る設計。
 
 ## 改善アイデア
 
+### 案 A': `SNT_KEEP_SECONDS` を有効化（2026-05-24 追加）
+
+`SNT_KEEP_SECONDS` は M:N 初回実装（be1bbd5b7, ko1, 2023-04-10）からすでに実装済みだが、
+デフォルト 0 で無効化されている。非ゼロ値を設定すると、アイドル SNT が N 秒後に自動終了する。
+
+```c
+// 案: デフォルト値を設定する
+#ifndef SNT_KEEP_SECONDS
+#define SNT_KEEP_SECONDS 5  // 5 秒アイドルで終了
+#endif
+```
+
+`default_max_cpu`（PR #17100 提出済み）と同じ commit の「もう一本の TODO」。
+`max_cpu` がプール上限（成長の制御）を担い、`SNT_KEEP_SECONDS` が縮小速度（解放）を担う設計。
+現状は上限のみ設定されており、縮小が機能していない非対称な状態。
+
+**効果の範囲**: ピーク負荷→低負荷への回復時に SNT プールが縮小する。biryani の
+ような常時高負荷のシナリオでは即効性は低いが、長時間稼働サーバーの bursty ワークロードで有効。
+
+**未測定事項**:
+- `SNT_KEEP_SECONDS = 5` でのスループット変化
+- 長時間稼働時の `snt_cnt` 推移
+
+詳細: [findings/snt-keep-seconds-disabled](../findings/snt-keep-seconds-disabled.md)
+
 ### 案 A: ヒステリシス付き補充
 
 > **ヒステリシス（hysteresis）**: 制御工学の用語。変化にすぐ反応せず、一定の遅延・閾値を設けることで不要な反応の繰り返しを防ぐ設計パターン。例：サーモスタットが 20℃ を 0.1℃ 下回るたびに ON/OFF するのではなく、19℃ で ON・21℃ で OFF にすることで無駄なスイッチングを避ける。
@@ -82,10 +108,10 @@ dedicated SNT 自体が発生しなくなり `thread_create_core` と futex の�
 
 ## 次のステップ
 
-1. `RUBY_MAX_CPU` を変えてベンチマークし、`thread_create_core` の比率の変化を測定
-2. `MINIMUM_SNT` を 1 以上にした場合の効果を測定
-3. ruby-dev に "Is frequent SNT replenishment expected?" として問い合わせる
-4. データが揃ったら Issue を作成する
+1. ~~`RUBY_MAX_CPU` を変えてベンチマークし、`thread_create_core` の比率の変化を測定~~ → PR #17100 で対応済み
+2. `SNT_KEEP_SECONDS` を有効化（例: 5）してベンチマークし、スループットと `thread_create_core` 比率の変化を確認（**次の実験候補**）
+3. `MINIMUM_SNT` を 1 以上にした場合の効果を測定
+4. データが揃ったら ruby-dev に Issue を提出する
 
 ## 懸念点
 

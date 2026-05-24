@@ -74,14 +74,30 @@ M:N スケジューラ経由で `rb_native_cond_signal`（すでに signal）を
 
 → [contributions/cond-signal-vs-broadcast](../contributions/cond-signal-vs-broadcast.md) はクローズ。
 
-### Q6: dedicated SNT の生成コストを下げられるか
+### Q6: dedicated SNT の生成コストを下げられるか（→ 調査中）
 
-FlameGraph の futex ~11% は Ractor send ではなく、ブロッキング I/O による dedicated SNT の
-`pthread_cond_wait` / `signal` が出所（[findings/futex-mn-scheduler-dedicated-nt](../findings/futex-mn-scheduler-dedicated-nt.md)）。
+FlameGraph の `thread_create_core` ~10% と futex ~11% が合算 ~21% を占める。
 
-- `IO#read` のたびに `native_thread_dedicated_inc` → dedicated SNT を確保する
-- biryani の 1,300 Ractors × 複数回 IO#read = 大量の SNT 切り替え
-- dedicated SNT の再利用 / プール化は可能か？
-- ノンブロッキング I/O（io_uring / epoll）を使えば dedicated SNT を避けられるか？
+**2026-05-24 調査結果**:
 
-関連: [internals/ractor-sync-wakeup](../internals/ractor-sync-wakeup.md), [findings/futex-mn-scheduler-dedicated-nt](../findings/futex-mn-scheduler-dedicated-nt.md)
+`SNT_KEEP_SECONDS = 0` が根本の一因。`default_max_cpu`（PR #17100）と同じ commit で
+ko1 が導入した「SNT アイドルタイムアウト」機能だが、デフォルト 0 で無効化されたまま。
+
+```
+max_cpu          → SNT プールの上限（成長の制御）← PR #17100 で解決
+SNT_KEEP_SECONDS → SNT プールの縮小速度（解放）← 未設定、プールが縮まらない
+```
+
+`SNT_KEEP_SECONDS > 0` にすると、アイドル SNT が N 秒でタイムアウト終了する仕組みが
+コード内に実装済み（`thread_pthread.c:1286-1304`）。biryani 常時高負荷では即効性は低いが、
+bursty ワークロードでのピーク後に SNT プールが縮小するようになる。
+
+`thread_create_core` ~10% の直接原因（IO#read → dedicated_inc → 補充 → dedicated_dec → 過剰）は
+`SNT_KEEP_SECONDS` では解決しない。こちらはヒステリシス（案 A）が必要。
+
+**次の実験**: Ruby を `SNT_KEEP_SECONDS = 5` でコンパイルして biryani ベンチマーク実行し、
+FlameGraph の `thread_create_core` 比率の変化を確認する。
+
+詳細: [findings/snt-keep-seconds-disabled](../findings/snt-keep-seconds-disabled.md), [contributions/snt-replenishment-overhead](../contributions/snt-replenishment-overhead.md)
+
+関連: [internals/ractor-mn-snt-lifecycle](../internals/ractor-mn-snt-lifecycle.md), [findings/futex-mn-scheduler-dedicated-nt](../findings/futex-mn-scheduler-dedicated-nt.md)

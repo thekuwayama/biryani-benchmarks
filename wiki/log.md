@@ -4,6 +4,16 @@
 
 ---
 
+## [2026-05-24] finding | SNT_KEEP_SECONDS = 0 — SNT プールが実行時に縮小しない（Q6 調査中）
+
+`default_max_cpu` と同じ commit（be1bbd5b7, ko1）で導入された 3 つの `#ifndef` 定数のうち、
+`SNT_KEEP_SECONDS = 0` と `MINIMUM_SNT = 0` が手つかずと判明。
+`SNT_KEEP_SECONDS > 0` にするとアイドル SNT がタイムアウト終了する仕組みがすでに実装済みだが無効化。
+`max_cpu`（上限・成長制御） ← PR #17100 対応済み、`SNT_KEEP_SECONDS`（縮小速度） ← 未解決の非対称構造を確認。
+次の実験: `SNT_KEEP_SECONDS = 5` でコンパイルした Ruby での FlameGraph 取得。
+
+---
+
 ## [2026-05-23] contribution | default_max_cpu PR 提出
 https://github.com/ruby/ruby/pull/17100
 
