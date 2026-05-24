@@ -58,6 +58,39 @@ Ruby スレッドはコンテキストスイッチのたびに SNT を乗り換�
 ブロッキング I/O 発生時は epoll/kqueue（Linux: `USE_MN_THREADS=1` が epoll で有効化）が
 完了を検知し、次の Ruby スレッドを SNT に載せる。
 
+### GRQ（Global Ractor Queue）
+
+M:N スケジューラが管理する「実行待ち Ractor の待ち行列」。
+SNT は GRQ から Ractor を取り出して実行し、GRQ が空なら仕事が来るまで待機する。
+
+```mermaid
+flowchart LR
+    subgraph GRQ["GRQ（Global Ractor Queue）"]
+        R1[Ractor B]
+        R2[Ractor C]
+        R3[Ractor D]
+    end
+    R1 --> SNT1["SNT-1<br>（deq して実行）"]
+    R2 --> SNT2["SNT-2<br>（deq して実行）"]
+    R3 -. "待ち" .-> SNT1
+
+    EV["IO 完了 / Ractor.send"] -->|enq| GRQ
+```
+
+Ractor が GRQ に入る（enq）タイミング:
+- `IO#read` 完了（epoll/kqueue が通知）
+- `Ractor.send` でメッセージが届いた
+- タイムスライスで強制プリエンプト
+
+SNT が GRQ を取り出す（deq）タイミング:
+- 現在実行中の Ractor が IO ブロックや `Ractor.recv` で停止したとき
+- 実行完了で次の仕事を探すとき
+
+`SNT_KEEP_SECONDS` との関係: GRQ が空＝「全 Ractor が IO 待ちか終了済み」の状態。
+この状態が続くと SNT がアイドルになり、`SNT_KEEP_SECONDS` 秒後にタイムアウト終了する。
+
+ソース: `ractor_sched_deq`（`thread_pthread.c:1270`）、`rb_ractor_sched_enq`（`thread_pthread.c:1248`）
+
 ### dedicated SNT（専有ネイティブスレッド）
 
 ブロッキング操作（`IO#read` 等）を実行中のスレッドは SNT を **専有（dedicated）** する。

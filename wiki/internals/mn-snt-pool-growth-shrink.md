@@ -188,6 +188,7 @@ flowchart TD
 ## 関連ページ
 
 - [findings/snt-keep-seconds-disabled](../findings/snt-keep-seconds-disabled.md)
+- [internals/ractor-overview](ractor-overview.md) — GRQ の定義・SNT の概要
 - [internals/ractor-mn-snt-lifecycle](ractor-mn-snt-lifecycle.md)
 - [contributions/snt-replenishment-overhead](../contributions/snt-replenishment-overhead.md)
 - [contributions/default-max-cpu-cpu-count](../contributions/default-max-cpu-cpu-count.md)
