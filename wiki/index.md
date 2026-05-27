@@ -2,13 +2,13 @@
 
 **ゴール**: ruby/ruby の Ractor にパフォーマンス関連のコントリビュートをする。
 
-最終更新: 2026-05-24（SNT_KEEP_SECONDS finding・pool-growth-shrink 図解追加・Q6 調査中）
+最終更新: 2026-05-27（ソースコード読み方ガイド追加・wiki 整理）
 
 ---
 
 ## 特殊ページ
 
-- [overview](overview.md) — 現時点の総合的理解とコントリビュート候補
+- [status](status.md) — 現時点の総合的理解とコントリビュート候補
 - [log](log.md) — セッションの時系列記録
 
 ---
@@ -47,6 +47,8 @@
 - [internals/ractor-select-implementation](internals/ractor-select-implementation.md) — `Ractor.select` の C 実装（ポーリングループ・Linux/Win32 分岐・M:N スケジューラとの接続）
 - [internals/mn-snt-pool-growth-shrink](internals/mn-snt-pool-growth-shrink.md) — `max_cpu`（成長上限）と `SNT_KEEP_SECONDS`（縮小速度）の役割と時系列シナリオ（Mermaid 図付き）
 - [internals/ractor-local-gc-status](internals/ractor-local-gc-status.md) — Ractor-local GC の現状（Ruby 4.0.2）：ko1 RubyKaigi 2025 講演との対比、インフラは布石段階、本体は未実装
+- [source-reading-guide](source-reading-guide.md) — ソースコード読み方ガイド（推奨読書順・関数・行番号）
+- [internals/timer-waiting-list-sort](internals/timer-waiting-list-sort.md) — `timer_th.waiting` の O(n) ソート挿入 — biryani とは無関係（I/O はタイムアウトなし → O(1) パスを通る）
 
 ---
 

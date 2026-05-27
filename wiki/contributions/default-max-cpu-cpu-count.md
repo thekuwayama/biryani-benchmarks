@@ -3,7 +3,7 @@ date: 2026-05-17
 updated: 2026-05-23
 type: pr
 status: 提出済み
-pr: https://github.com/ruby/ruby/pull/17100
+pr: submitted
 ---
 
 # `default_max_cpu` を物理 CPU 数に変更する
@@ -184,10 +184,10 @@ thread_pthread.c では Win32 分岐は不要なので `HAVE_SYSCONF && _SC_NPRO
 
 | ファイル | 行 | 内容 |
 |----------|---|------|
-| `raw/ruby-src/thread_pthread.c` | 1734-1745 | `default_max_cpu = 8` の設定箇所・変更対象 |
-| `raw/ruby-src/thread_pthread_mn.c` | 130-139 | `sysconf(_SC_PAGESIZE)` の使用例（ガードなし） |
-| `raw/ruby-src/ext/etc/etc.c` | 1014-1121 | `_SC_NPROCESSORS_ONLN` の guard パターン先例 |
-| `raw/ruby-src/thread_pthread_mn.c` | 421-423 | `max_cpu` を上限に使う補充条件 |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1734-L1745) | 1734-1745 | `default_max_cpu = 8` の設定箇所・変更対象 |
+| [`thread_pthread_mn.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread_mn.c#L130-L139) | 130-139 | `sysconf(_SC_PAGESIZE)` の使用例（ガードなし） |
+| [`ext/etc/etc.c`](https://github.com/ruby/ruby/blob/v4.0.2/ext/etc/etc.c#L1014-L1121) | 1014-1121 | `_SC_NPROCESSORS_ONLN` の guard パターン先例 |
+| [`thread_pthread_mn.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread_mn.c#L421-L423) | 421-423 | `max_cpu` を上限に使う補充条件 |
 
 ## git 履歴
 

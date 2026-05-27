@@ -110,6 +110,7 @@ biryani のベースライン（-c50 -m100）では 5,000 の Stream Ractor が 
 
 ## 関連ページ
 
+- [source-reading-guide](../source-reading-guide.md) — ソースコード読み方ガイド
 - [internals/biryani-ractor-architecture](biryani-ractor-architecture.md)
 - [findings/flamegraph-baseline-cpu-profile](../findings/flamegraph-baseline-cpu-profile.md)
 - [findings/latency-stream-multiplexing](../findings/latency-stream-multiplexing.md)

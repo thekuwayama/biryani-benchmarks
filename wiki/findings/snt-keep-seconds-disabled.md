@@ -72,7 +72,7 @@ VM 終了まで生き続ける。biryani のような高 I/O ワークロード�
 
 | 定数 | 導入 commit | 著者 | 状態 |
 |------|------------|------|------|
-| `default_max_cpu = 8` | be1bbd5b7（2023-04-10） | ko1 | **PR #17100 提出済み** |
+| `default_max_cpu = 8` | be1bbd5b7（2023-04-10） | ko1 | **提出済み** |
 | `SNT_KEEP_SECONDS = 0` | be1bbd5b7（2023-04-10） | ko1 | 未解決 |
 | `MINIMUM_SNT = 0` | be1bbd5b7（2023-04-10） | ko1 | 未解決（"for debug"） |
 

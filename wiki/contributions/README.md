@@ -1,5 +1,6 @@
 ---
 date: 2026-05-17
+updated: 2026-05-27
 tags: [contribution]
 ---
 
@@ -13,10 +14,26 @@ tags: [contribution]
 3. ruby/ruby の関連コードが特定できている
 4. 再現可能なシナリオがある
 
-## 候補リスト
-
-現時点では候補なし。`wiki/questions/` の疑問を深掘りして昇格させる。
-
 ## 提出済み
 
-なし
+| 候補 | 状態 |
+|------|------|
+| `default_max_cpu` を物理 CPU 数に | **提出済み・レビュー待ち** |
+
+詳細: [contributions/default-max-cpu-cpu-count](default-max-cpu-cpu-count.md)
+
+## 調査中
+
+| 候補 | 状態 |
+|------|------|
+| SNT 補充オーバーヘッド削減（`SNT_KEEP_SECONDS` 有効化・ヒステリシス案） | 調査中（次の実験: `SNT_KEEP_SECONDS = 5` でコンパイル）|
+
+詳細: [contributions/snt-replenishment-overhead](snt-replenishment-overhead.md)
+
+## クローズ済み
+
+| 候補 | 理由 |
+|------|------|
+| broadcast → signal | Linux では `pthread_cond_broadcast` は走らない（Win32 のみ） |
+
+詳細: [contributions/cond-signal-vs-broadcast](cond-signal-vs-broadcast.md)

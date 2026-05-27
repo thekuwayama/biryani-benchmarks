@@ -65,6 +65,19 @@ Win32 ブロック内の `rb_ractor_sched_wakeup` では `th` 引数が無視さ
 
 → [contributions/cond-signal-vs-broadcast](../contributions/cond-signal-vs-broadcast.md)（クローズ済み）
 
+## `pthread_cond_broadcast` vs `rb_native_cond_signal`
+
+| | `pthread_cond_broadcast` | `rb_native_cond_signal` |
+|---|---|---|
+| 動作 | 同じ条件変数で待つ**全スレッド**を起こす | **1 スレッド**だけを起こす |
+| コスト | 不要な wakeup が多発（thundering herd） | 最小限 |
+| ruby/ruby での使用箇所 | `ractor_sync.c` の Win32 ブロック内のみ | Linux の M:N スケジューラ（`thread_pthread.c:1366`） |
+| biryani（Linux）での実行 | **走らない** | 実際に走るパス |
+
+Linux では `rb_ractor_sched_wakeup` が `waiter->th`（起こすべきスレッド）を正しく受け取り、
+そのスレッドが乗っている SNT の条件変数 `r_th->nt->cond.readyq` に対して `signal` を発行する。
+「誰でもいいから起こす」のではなく「そのスレッドが使っている SNT を直接 signal する」設計。
+
 ## 発見 B: `ractor_wakeup_all` が N 人のウェイターに N 回 wakeup を呼ぶ
 
 ```c
@@ -100,8 +113,10 @@ while (1) {
 }
 ```
 
-- biryani `-c25 -m50` で 1 接続あたり最大 52 ポートを監視
-- wakeup のたびに 52 port の per-port queue を poll する
+- biryani の `select_loop` は `Ractor.select(@sock, @streams_ctx.tx)` — 常に **2 ポート**
+  - `@sock`: recv_loop からのフレーム受信
+  - `@streams_ctx.tx`: 全 Stream Ractor が共有する単一 Port（`Ractor::Port.new` を 1 度だけ生成）
+- ポート数 N の場合 O(N) のスキャンコストがかかるが、N=2 なので無視できる
 - 送信側は「どのポートに送ったか」を知っている（`b->port_id`）が、wakeup 信号に含めない
 
 仮に「wakeup 時にポート ID を渡す」設計にすれば、そのポートを優先チェックできる。
@@ -125,6 +140,7 @@ struct {
 
 ## 関連ページ
 
+- [source-reading-guide](../source-reading-guide.md) — ソースコード読み方ガイド
 - [internals/ractor-port-implementation](ractor-port-implementation.md)
 - [findings/rperf-wall-vs-perf-cpu](../findings/rperf-wall-vs-perf-cpu.md)
 - [questions/README](../questions/README.md)

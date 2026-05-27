@@ -4,6 +4,21 @@
 
 ---
 
+## [2026-05-27] review | wiki 整合性修正・用語集追加
+
+- `ractor-sync-wakeup.md`: biryani の `Ractor.select` は常に 2 ポート（`@sock` + `@streams_ctx.tx`）と修正。「52 ポート」は誤り（`@streams_ctx.tx` は全 Stream が共有する単一 Port）
+- `biryani-ractor-architecture.md`: futex ~16% の説明を正確な真因（ブロッキング I/O → dedicated SNT の cond_signal/wait）に更新
+- `source-reading-guide.md`: SNT / DNT / GRQ / max_cpu / SNT_KEEP_SECONDS 等 11 用語の用語集を追加
+
+---
+
+## [2026-05-27] internals | ソースコード読み方ガイドを追加
+
+wiki を読んだ後に実際のソースを読む際の入り口として、推奨読書順・関数名・行番号をまとめたページを新設。
+`ractor_core.h` → `ractor.c` → `ractor_sync.c` → `thread_pthread.c` → `thread_pthread_mn.c` の順が理解しやすい。
+
+---
+
 ## [2026-05-24] internals | Ractor-local GC の現状調査（Ruby 4.0.2）
 ko1 RubyKaigi 2025 "Toward Ractor Local GC" をベースにソース調査。
 `_ractor_belonging_id`（RACTOR_CHECK_MODE 専用）と `rb_ractor_newobj_cache_t`（TLAB）は存在するが、
@@ -17,13 +32,13 @@ Ractor-local GC は Ruby 4.0.2 未実装。copy 渡しの「ローカル GC で�
 `default_max_cpu` と同じ commit（be1bbd5b7, ko1）で導入された 3 つの `#ifndef` 定数のうち、
 `SNT_KEEP_SECONDS = 0` と `MINIMUM_SNT = 0` が手つかずと判明。
 `SNT_KEEP_SECONDS > 0` にするとアイドル SNT がタイムアウト終了する仕組みがすでに実装済みだが無効化。
-`max_cpu`（上限・成長制御） ← PR #17100 対応済み、`SNT_KEEP_SECONDS`（縮小速度） ← 未解決の非対称構造を確認。
+`max_cpu`（上限・成長制御） ← 対応済み、`SNT_KEEP_SECONDS`（縮小速度） ← 未解決の非対称構造を確認。
 次の実験: `SNT_KEEP_SECONDS = 5` でコンパイルした Ruby での FlameGraph 取得。
 
 ---
 
 ## [2026-05-23] contribution | default_max_cpu PR 提出
-https://github.com/ruby/ruby/pull/17100
+`default_max_cpu` を物理 CPU 数にする PR を ruby/ruby に提出。
 
 ---
 
@@ -117,6 +132,11 @@ rb_ractor_sched_wakeup: broadcast → signal（1行変更）。th 引数が未�
 ## [2026-05-17] meta | LLM Wiki 3レイヤー整理
 raw/（Raw Sources）・CLAUDE.md（Schema）・wiki/（Compiled Wiki）の3層に整理。output/ を raw/ に改名、CLAUDE.md をプロジェクトルートに新設。
 
+## [2026-05-27] internals | timer-waiting-list-sort
+`timer_th.waiting` の O(n) ソート挿入 TODO を調査。I/O 待機（タイムアウトなし）は O(1) パス、Thread.sleep や IO#wait+timeout のみ O(n) パスを通る。biryani の IO#read / IO#write / Ractor.select はすべて O(1) パス。SNT_KEEP_SECONDS の idle 待機も direct `native_cond_timedwait` で `timer_th.waiting` に入らない。biryani 由来の根拠データが取れないため SNT 補充系より優先度低と判断。
+
+---
+
 ## [2026-05-17] setup | Wiki 初期化
 
-wiki/ ディレクトリを初期化した。index.md / overview.md / log.md と scenarios/ findings/ internals/ ディレクトリを作成。
+wiki/ ディレクトリを初期化した。index.md / status.md / log.md と scenarios/ findings/ internals/ ディレクトリを作成。

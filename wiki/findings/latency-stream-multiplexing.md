@@ -24,4 +24,4 @@ tags: [finding]
 ## 関連ページ
 
 - [scenarios/baseline-default](../scenarios/baseline-default.md)
-- [overview](../overview.md)
+- [status](../status.md)

@@ -59,10 +59,10 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 
 | ファイル | 行 | 内容 |
 |----------|---|------|
-| `raw/ruby-src/ractor_sync.c` | 963-968 | `rb_ractor_sched_wakeup` 本体 |
-| `raw/ruby-src/ractor_sync.c` | 984-998 | `ractor_wakeup_all`（呼び出し元） |
-| `raw/ruby-src/ractor_sync.c` | 1013-1028 | `ubf_ractor_wait`（呼び出し元） |
-| `raw/ruby-src/thread_pthread.c` | 205-213 | `rb_native_cond_signal` 定義 |
+| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_sync.c#L963-L968) | 963-968 | `rb_ractor_sched_wakeup` 本体 |
+| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_sync.c#L984-L998) | 984-998 | `ractor_wakeup_all`（呼び出し元） |
+| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_sync.c#L1013-L1028) | 1013-1028 | `ubf_ractor_wait`（呼び出し元） |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L205-L213) | 205-213 | `rb_native_cond_signal` 定義 |
 
 詳細分析: [internals/ractor-sync-wakeup](../internals/ractor-sync-wakeup.md)
 
@@ -91,7 +91,7 @@ FlameGraph の futex ~11% の真因は Ractor send ではなく、ブロッキ�
 
 | ファイル | 行 | 内容 |
 |----------|---|------|
-| `raw/ruby-src/ractor_sync.c` | 913-969 | `#else // win32` ブロック（broadcast はここ） |
-| `raw/ruby-src/thread_pthread.c` | 1366-1380 | pthread 版 `rb_ractor_sched_wakeup`（th を使う） |
-| `raw/ruby-src/thread_pthread.c` | 762-791 | `thread_sched_wakeup_running_thread`（signal） |
-| `raw/ruby-src/thread_pthread.c` | 844-858 | `thread_sched_wait_running_turn`（cond_wait 側） |
+| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_sync.c#L913-L969) | 913-969 | `#else // win32` ブロック（broadcast はここ） |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1366-L1380) | 1366-1380 | pthread 版 `rb_ractor_sched_wakeup`（th を使う） |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L762-L791) | 762-791 | `thread_sched_wakeup_running_thread`（signal） |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L844-L858) | 844-858 | `thread_sched_wait_running_turn`（cond_wait 側） |

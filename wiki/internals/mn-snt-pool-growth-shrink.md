@@ -7,7 +7,7 @@ tags: [internals]
 
 `max_cpu` と `SNT_KEEP_SECONDS` の 2 パラメータがそれぞれ SNT プールの
 「成長の上限」と「縮小の速度」を担い、セットで機能する設計になっている。
-現在は `max_cpu` のみが設定されており（PR #17100 で物理コア数に変更）、
+現在は `max_cpu` のみが設定されており（提出済み PR で物理コア数に変更）、
 縮小側の `SNT_KEEP_SECONDS = 0` が無効のまま。
 
 ## SNT の状態遷移
@@ -54,7 +54,7 @@ flowchart LR
 
 | パラメータ | 制御対象 | 現在の値 |
 |-----------|---------|--------|
-| `max_cpu` | SNT の増える上限 | ~~8~~ → PR #17100 で物理コア数に変更 |
+| `max_cpu` | SNT の増える上限 | ~~8~~ → 提出済み PR で物理コア数に変更 |
 | `SNT_KEEP_SECONDS` | アイドル SNT の生存時間 | **0 = 永久に消えない** |
 
 ## 時系列シナリオ：max_cpu = 2 の場合
@@ -145,7 +145,7 @@ sequenceDiagram
     participant TM as Timer Thread
     participant PL as SNT Pool
 
-    Note over PL: snt_cnt=4（max_cpu=4、PR #17100 後）
+    Note over PL: snt_cnt=4（max_cpu=4、PR 提出後）
 
     R1->>PL: IO#read 多発 → dedicated_inc × 3
     Note over PL: snt_cnt=1
@@ -183,10 +183,11 @@ flowchart TD
     style G fill:#dfd,stroke:#0a0
 ```
 
-`max_cpu`（上限）は PR #17100 で修正済み。`SNT_KEEP_SECONDS`（縮小）が次の候補。
+`max_cpu`（上限）は提出済み PR で修正済み。`SNT_KEEP_SECONDS`（縮小）が次の候補。
 
 ## 関連ページ
 
+- [source-reading-guide](../source-reading-guide.md) — ソースコード読み方ガイド
 - [findings/snt-keep-seconds-disabled](../findings/snt-keep-seconds-disabled.md)
 - [internals/ractor-overview](ractor-overview.md) — GRQ の定義・SNT の概要
 - [internals/ractor-mn-snt-lifecycle](ractor-mn-snt-lifecycle.md)

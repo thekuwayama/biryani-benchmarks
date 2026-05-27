@@ -140,5 +140,6 @@ Ractor-local GC なしでも copy が持つ意味：
 
 ## 関連ページ
 
+- [source-reading-guide](../source-reading-guide.md) — ソースコード読み方ガイド
 - [internals/ractor-overview](ractor-overview.md)
 - [findings/rperf-wall-vs-perf-cpu](../findings/rperf-wall-vs-perf-cpu.md)

@@ -28,7 +28,7 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
 
     if (((int)snt_cnt < MINIMUM_SNT) ||               // MINIMUM_SNT = 0
         (snt_cnt < schedulable_ractor_cnt &&
-         snt_cnt < vm->ractor.sched.max_cpu)) {        // RUBY_MAX_CPU = 8
+         snt_cnt < vm->ractor.sched.max_cpu)) {        // RUBY_MAX_CPU（提出済み PR で物理 CPU 数に変更。旧デフォルト 8）
 
         vm->ractor.sched.snt_cnt++;
         // → native_thread_create0 → pthread_create  ← thread_create_core!
@@ -77,7 +77,7 @@ IO#read 完了
 補充条件 `snt_cnt < ractor_cnt && snt_cnt < max_cpu` で重要なのは：
 
 - `ractor_cnt = 1,300`（biryani の -c25 -m50 時）— 常に `snt_cnt` より大きい
-- `max_cpu = 8`（デフォルト）— 実質的な上限
+- `max_cpu` = 物理 CPU 数（提出済み PR で変更。旧デフォルト 8）— 実質的な上限
 - `MINIMUM_SNT = 0`（コメントには "for debug" とある）
 
 つまり SNT が 1 本でも dedicated になると補充が走り、上限 8 本まで回復しようとする。
@@ -92,6 +92,7 @@ biryani では `IO#read` が頻発するため、この補充が継続的に発�
 
 ## 関連ページ
 
+- [source-reading-guide](../source-reading-guide.md) — ソースコード読み方ガイド
 - [internals/ractor-overview](ractor-overview.md)（SNT の概要）
 - [findings/futex-mn-scheduler-dedicated-nt](../findings/futex-mn-scheduler-dedicated-nt.md)（futex ~11% の真因）
 - [findings/flamegraph-c25-m50-vs-baseline](../findings/flamegraph-c25-m50-vs-baseline.md)（FlameGraph の実測値）

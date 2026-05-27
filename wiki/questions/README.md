@@ -80,11 +80,11 @@ FlameGraph の `thread_create_core` ~10% と futex ~11% が合算 ~21% を占め
 
 **2026-05-24 調査結果**:
 
-`SNT_KEEP_SECONDS = 0` が根本の一因。`default_max_cpu`（PR #17100）と同じ commit で
+`SNT_KEEP_SECONDS = 0` が根本の一因。`default_max_cpu`（提出済み）と同じ commit で
 ko1 が導入した「SNT アイドルタイムアウト」機能だが、デフォルト 0 で無効化されたまま。
 
 ```
-max_cpu          → SNT プールの上限（成長の制御）← PR #17100 で解決
+max_cpu          → SNT プールの上限（成長の制御）← 解決済み
 SNT_KEEP_SECONDS → SNT プールの縮小速度（解放）← 未設定、プールが縮まらない
 ```
 

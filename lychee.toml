@@ -1,0 +1,7 @@
+max_concurrency = 2
+
+# GitHub API のレート制限を避ける
+host_request_interval = "500ms"
+
+# タイムアウトは許容（GitHub が一時的に遅い場合がある）
+accept_timeouts = true

@@ -45,5 +45,5 @@ biryani のデフォルトパラメータによる最初のベンチマーク。
 
 ## 関連ページ
 
-- [overview](../overview.md)
+- [status](../status.md)
 - [findings/latency-stream-multiplexing](../findings/latency-stream-multiplexing.md)

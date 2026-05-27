@@ -23,7 +23,7 @@ tags: [finding]
 created → running/blocking → terminated
 ```
 
-状態は一方向で、終了した Ractor を再起動する API（`reset` など）は存在しない（`ractor_core.h:61-66`）。
+状態は一方向で、終了した Ractor を再起動する API（`reset` など）は存在しない（[`ractor_core.h:61-66`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_core.h#L61-L66)）。
 
 ## ループ型 Ractor プール（技術的に可能）
 
@@ -59,7 +59,7 @@ end
 
 ## idle Ractor と SNT の関係
 
-`Ractor.recv` でブロックした Ractor は `rb_ractor_sched_wait`（thread_pthread.c:1330）経由で
+`Ractor.recv` でブロックした Ractor は [`rb_ractor_sched_wait`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1330)（`thread_pthread.c:1330`）経由で
 M:N スケジューラに入り、SNT（Shared Native Thread）を解放して休眠する。
 
 → プールした idle Ractors は SNT を占有しない。Ruby Ractor オブジェクトとして `vm->ractor.cnt` に
@@ -67,7 +67,7 @@ M:N スケジューラに入り、SNT（Shared Native Thread）を解放して�
 
 ## thread_create_core ~10% への効果が限定的な理由
 
-SNT 補充（`native_thread_check_and_create_shared`、thread_pthread_mn.c:408）の発火条件：
+SNT 補充（[`native_thread_check_and_create_shared`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread_mn.c#L408)、`thread_pthread_mn.c:408`）の発火条件：
 
 ```c
 if (snt_cnt < schedulable_ractor_cnt &&

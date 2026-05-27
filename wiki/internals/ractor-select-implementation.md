@@ -70,6 +70,7 @@ waiter が 1 人（biryani の select_loop は単一スレッド）なら wakeup
 
 ## 関連ページ
 
+- [source-reading-guide](../source-reading-guide.md) — ソースコード読み方ガイド
 - [findings/ractor-select-wait-breakdown](../findings/ractor-select-wait-breakdown.md)
 - [internals/ractor-sync-wakeup](ractor-sync-wakeup.md)
 - [internals/ractor-mn-snt-lifecycle](ractor-mn-snt-lifecycle.md)

@@ -57,7 +57,7 @@ SNT が 1 本でも dedicated になると即座に補充が走る設計。
 #endif
 ```
 
-`default_max_cpu`（PR #17100 提出済み）と同じ commit の「もう一本の TODO」。
+`default_max_cpu`（提出済み）と同じ commit の「もう一本の TODO」。
 `max_cpu` がプール上限（成長の制御）を担い、`SNT_KEEP_SECONDS` が縮小速度（解放）を担う設計。
 現状は上限のみ設定されており、縮小が機能していない非対称な状態。
 
@@ -101,14 +101,14 @@ dedicated SNT 自体が発生しなくなり `thread_create_core` と futex の�
 
 | ファイル | 行 | 内容 |
 |----------|---|------|
-| `thread_pthread_mn.c` | 408-448 | `native_thread_check_and_create_shared` |
-| `thread_pthread.c` | 1749-1763 | `native_thread_dedicated_inc` |
-| `thread_pthread.c` | 1265-1267 | `MINIMUM_SNT = 0` 定義 |
-| `thread_pthread.c` | 2113-2146 | `native_thread_create0` (`pthread_create`) |
+| [`thread_pthread_mn.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread_mn.c#L408-L448) | 408-448 | `native_thread_check_and_create_shared` |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1749-L1763) | 1749-1763 | `native_thread_dedicated_inc` |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1265-L1267) | 1265-1267 | `MINIMUM_SNT = 0` 定義 |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L2113-L2146) | 2113-2146 | `native_thread_create0` (`pthread_create`) |
 
 ## 次のステップ
 
-1. ~~`RUBY_MAX_CPU` を変えてベンチマークし、`thread_create_core` の比率の変化を測定~~ → PR #17100 で対応済み
+1. ~~`RUBY_MAX_CPU` を変えてベンチマークし、`thread_create_core` の比率の変化を測定~~ → 対応済み
 2. `SNT_KEEP_SECONDS` を有効化（例: 5）してベンチマークし、スループットと `thread_create_core` 比率の変化を確認（**次の実験候補**）
 3. `MINIMUM_SNT` を 1 以上にした場合の効果を測定
 4. データが揃ったら ruby-dev に Issue を提出する

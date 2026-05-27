@@ -104,7 +104,7 @@ end
 |-------------------|----------------------|
 | `thread_create_core` 12% | ストリームごとに Ractor（= OS スレッド）を生成。プールなし |
 | `nt_alloc_stack` 5% | 各スレッド生成時のスタック確保コスト |
-| `do_futex` / `futex_wake` 計 ~16% | `Ractor.select` が内部で futex を使って Port を待機。多数のストリーム Ractor が `@tx` に送信するため競合が発生 |
+| `do_futex` / `futex_wake` 計 ~16% | ブロッキング I/O（`IO#read`）による dedicated SNT の `cond_signal` / `cond_wait`（M:N スケジューラの `cond.readyq`）。詳細は [findings/futex-mn-scheduler-dedicated-nt](../findings/futex-mn-scheduler-dedicated-nt.md) |
 | GC ~11% | ストリームごとにオブジェクトが生成・破棄されるため |
 
 ## 設計上のトレードオフ
@@ -121,6 +121,7 @@ end
 
 ## 関連ページ
 
+- [source-reading-guide](../source-reading-guide.md) — ソースコード読み方ガイド
 - [findings/flamegraph-baseline-cpu-profile](../findings/flamegraph-baseline-cpu-profile.md)
 - [findings/latency-stream-multiplexing](../findings/latency-stream-multiplexing.md)
 - [scenarios/baseline-default](../scenarios/baseline-default.md)
