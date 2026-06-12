@@ -14,11 +14,11 @@ tags: [contribution]
 3. ruby/ruby の関連コードが特定できている
 4. 再現可能なシナリオがある
 
-## 提出済み
+## マージ済み
 
 | 候補 | 状態 |
 |------|------|
-| `default_max_cpu` を物理 CPU 数に | **提出済み・レビュー待ち** |
+| `default_max_cpu` を物理 CPU 数に | **マージ済み（e98f95b4fd）** |
 
 詳細: [contributions/default-max-cpu-cpu-count](default-max-cpu-cpu-count.md)
 

@@ -6,7 +6,7 @@ tags: [internals]
 # ruby/ruby Ractor ソースコード読み方ガイド
 
 wiki で出てきたトピックに対応させた、ソースコードの推奨読書順。
-`raw/ruby-src/` は v4.0.2 のサブモジュールなので、ここに書いた行番号で直接ジャンプできる。
+`raw/ruby-src/` は commit `e98f95b4fd`（v4.0.2 直後）のサブモジュールなので、ここに書いた行番号で直接ジャンプできる。
 
 ## 全体像
 
@@ -148,7 +148,7 @@ flowchart LR
 ## 実用的なコツ
 
 - **grep を起点にする**: 関数名（`ractor_wakeup_all`, `native_thread_dedicated_inc` 等）で grep して前後 30 行を読む方が全体を読むより速い
-- **wiki の行番号**: `internals/` 各ページに書いてある `:行番号` は v4.0.2 のもの。`raw/ruby-src/` は同じバージョンのサブモジュールなので直接ジャンプできる
+- **wiki の行番号**: `internals/` 各ページに書いてある `:行番号` は commit `e98f95b4fd` 時点のもの。`raw/ruby-src/` は同じコミットのサブモジュールなので直接ジャンプできる
 - **`#ifdef RUBY_THREAD_PTHREAD_H`**: このガードが出てきたら「Linux 用」のパス。`#else` ブロックは Win32 なので読み飛ばして OK
 
 ---

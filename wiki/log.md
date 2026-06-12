@@ -4,6 +4,17 @@
 
 ---
 
+## [2026-06-13] maintenance | submodule 更新・wiki 行番号修正・PR マージ済み更新
+
+- `raw/ruby-src` を v4.0.2 → commit `e98f95b4fd`（Use nprocessors as default_max_cpu for M:N scheduler）に更新
+- wiki 全体の GitHub permalink 行番号を新コミットの実際の行番号に修正（thread_pthread.c: +7〜+72、ractor_sync.c: -14〜-27 等）
+- `ractor_waiter` 構造体参照を `ractor_sync.c:860` → `ractor_core.h:118` に更新（c104ede546 で移転済み）
+- `contributions/default-max-cpu-cpu-count.md`: status を「提出済み」→「マージ済み（e98f95b4fd）」に更新
+- index.md・status.md・contributions/README.md 等、全 wiki の「提出済み」表記を「マージ済み」に統一
+- lychee リンクチェック: 247 URL すべて OK
+
+---
+
 ## [2026-05-27] review | wiki 整合性修正・用語集追加
 
 - `ractor-sync-wakeup.md`: biryani の `Ractor.select` は常に 2 ポート（`@sock` + `@streams_ctx.tx`）と修正。「52 ポート」は誤り（`@streams_ctx.tx` は全 Stream が共有する単一 Port）

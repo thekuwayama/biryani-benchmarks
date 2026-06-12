@@ -28,7 +28,7 @@ native_thread_check_and_create_shared(rb_vm_t *vm)
 
     if (((int)snt_cnt < MINIMUM_SNT) ||               // MINIMUM_SNT = 0
         (snt_cnt < schedulable_ractor_cnt &&
-         snt_cnt < vm->ractor.sched.max_cpu)) {        // RUBY_MAX_CPU（提出済み PR で物理 CPU 数に変更。旧デフォルト 8）
+         snt_cnt < vm->ractor.sched.max_cpu)) {        // RUBY_MAX_CPU（マージ済み（e98f95b4fd）。旧デフォルト 8）
 
         vm->ractor.sched.snt_cnt++;
         // → native_thread_create0 → pthread_create  ← thread_create_core!

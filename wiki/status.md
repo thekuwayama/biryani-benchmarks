@@ -82,7 +82,7 @@ unknown             ~24%
 
 Ruby 3.3+ の非 main Ractor は M:N スケジューラを使用。M Ruby スレッドを N OS スレッド（SNT）で処理。
 
-- デフォルト SNT 上限: `default_max_cpu` = 物理 CPU 数（提出済み PR で変更。変更前は固定値 8）
+- デフォルト SNT 上限: `default_max_cpu` = 物理 CPU 数（マージ済み（e98f95b4fd）。変更前は固定値 8）
 - `IO#read` → dedicated SNT 取得 → `snt_cnt--` → `native_thread_check_and_create_shared` で補充
 - ブロック中の Ractor は SNT を解放して休眠（M:N の恩恵）
 
@@ -120,7 +120,7 @@ rperf は並行計測（重複あり）なので複数 Ractor の数値を合算
 
 | 候補 | 状態 | 根拠 |
 |------|------|------|
-| `default_max_cpu` を物理 CPU 数に | **提出済み** | RUBY_MAX_CPU=4 で +3%（I/O）・+5.5%（CPU）、ko1 の TODO コメント |
+| `default_max_cpu` を物理 CPU 数に | **マージ済み（e98f95b4fd）** | RUBY_MAX_CPU=4 で +3%（I/O）・+5.5%（CPU）、ko1 の TODO コメント |
 | SNT 補充オーバーヘッド削減 | 候補 | thread_create_core ~10%、改善案 3 つ |
 | broadcast → signal | **クローズ** | Linux では broadcast は走らない |
 

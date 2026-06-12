@@ -57,7 +57,7 @@ SNT が 1 本でも dedicated になると即座に補充が走る設計。
 #endif
 ```
 
-`default_max_cpu`（提出済み）と同じ commit の「もう一本の TODO」。
+`default_max_cpu`（マージ済み e98f95b4fd）と同じ commit の「もう一本の TODO」。
 `max_cpu` がプール上限（成長の制御）を担い、`SNT_KEEP_SECONDS` が縮小速度（解放）を担う設計。
 現状は上限のみ設定されており、縮小が機能していない非対称な状態。
 
