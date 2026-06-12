@@ -35,10 +35,10 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 ### コードレベルの根拠
 
 1. **`th` 引数が未使用**: 関数シグネチャは `rb_thread_t *th` を受け取るが本体で一切使わない。
-   呼び出し元 (`ractor_wakeup_all` L.988, `ubf_ractor_wait` L.1023) は特定のスレッドを渡している。
+   呼び出し元 (`ractor_wakeup_all` L.944, `ubf_ractor_wait` L.974) は特定のスレッドを渡している。
 
 2. **`rb_native_cond_signal` は既存 API**: `thread_pthread.c` の L.205 で定義済み。
-   L.771, L.1253, L.1469, L.2435 で実際に使われている。
+   L.778, L.1314, L.1532, L.2507 で実際に使われている。
 
 3. **セマンティクスの整合性**: 起こしたいスレッド (`th`) が分かっているのに全員に broadcast するのは過剰。
 
@@ -52,16 +52,16 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 ## 変更量
 
 1 行変更（`broadcast` → `signal`）。影響範囲は `rb_ractor_sched_wakeup` の呼び出し元 2 箇所:
-- `ractor_wakeup_all` (L.988): 全ウェイターを起こす — N=1 なので signal で同等
-- `ubf_ractor_wait` (L.1023): 1 ウェイターのみを起こす — signal がより適切
+- `ractor_wakeup_all` (L.944): 全ウェイターを起こす — N=1 なので signal で同等
+- `ubf_ractor_wait` (L.974): 1 ウェイターのみを起こす — signal がより適切
 
 ## 関連する ruby/ruby のコード
 
 | ファイル | 行 | 内容 |
 |----------|---|------|
-| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L963-L968) | 963-968 | `rb_ractor_sched_wakeup` 本体 |
-| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L984-L998) | 984-998 | `ractor_wakeup_all`（呼び出し元） |
-| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L1013-L1028) | 1013-1028 | `ubf_ractor_wait`（呼び出し元） |
+| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L936-L939) | 936-939 | `rb_ractor_sched_wakeup` 本体 |
+| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L944-L970) | 944-970 | `ractor_wakeup_all`（呼び出し元） |
+| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L974-L1003) | 974-1003 | `ubf_ractor_wait`（呼び出し元） |
 | [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L205-L213) | 205-213 | `rb_native_cond_signal` 定義 |
 
 詳細分析: [internals/ractor-sync-wakeup](../internals/ractor-sync-wakeup.md)
@@ -72,12 +72,12 @@ rb_ractor_sched_wakeup(rb_ractor_t *r, rb_thread_t *th)
 
 `rb_ractor_sched_wakeup` の `pthread_cond_broadcast` は `#ifdef RUBY_THREAD_PTHREAD_H ... #else // win32` の **Win32 ブロック内**にある。Linux（pthread）ではこのコードパスは一切走らない。
 
-pthread 版の `rb_ractor_sched_wakeup` は `thread_pthread.c:1366` に定義され、`r_th` 引数を正しく使って M:N スケジューラ経由で特定スレッドを起こす：
+pthread 版の `rb_ractor_sched_wakeup` は `thread_pthread.c:1428` に定義され、`r_th` 引数を正しく使って M:N スケジューラ経由で特定スレッドを起こす：
 
 ```
-rb_ractor_sched_wakeup(r, r_th)           # thread_pthread.c:1366
-  └─ thread_sched_to_ready_common(sched, r_th, ...)   # L.795
-       └─ thread_sched_wakeup_running_thread(sched, next_th, ...) # L.762
+rb_ractor_sched_wakeup(r, r_th)           # thread_pthread.c:1428
+  └─ thread_sched_to_ready_common(sched, r_th, ...)   # L.802
+       └─ thread_sched_wakeup_running_thread(sched, next_th, ...) # L.769
             └─ rb_native_cond_signal(&next_th->nt->cond.readyq)   # すでに signal!
 ```
 
@@ -91,7 +91,7 @@ FlameGraph の futex ~11% の真因は Ractor send ではなく、ブロッキ�
 
 | ファイル | 行 | 内容 |
 |----------|---|------|
-| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L913-L969) | 913-969 | `#else // win32` ブロック（broadcast はここ） |
-| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1366-L1380) | 1366-1380 | pthread 版 `rb_ractor_sched_wakeup`（th を使う） |
-| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L762-L791) | 762-791 | `thread_sched_wakeup_running_thread`（signal） |
-| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L844-L858) | 844-858 | `thread_sched_wait_running_turn`（cond_wait 側） |
+| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L889-L940) | 889-940 | `#else // win32` ブロック（broadcast はここ） |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1428-L1443) | 1366-1380 | pthread 版 `rb_ractor_sched_wakeup`（th を使う） |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L769-L798) | 769-798 | `thread_sched_wakeup_running_thread`（signal） |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L875-L900) | 875-900 | `thread_sched_wait_running_turn`（cond_wait 側） |

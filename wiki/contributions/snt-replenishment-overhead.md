@@ -102,9 +102,9 @@ dedicated SNT 自体が発生しなくなり `thread_create_core` と futex の�
 | ファイル | 行 | 内容 |
 |----------|---|------|
 | [`thread_pthread_mn.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread_mn.c#L408-L448) | 408-448 | `native_thread_check_and_create_shared` |
-| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1749-L1763) | 1749-1763 | `native_thread_dedicated_inc` |
-| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1265-L1267) | 1265-1267 | `MINIMUM_SNT = 0` 定義 |
-| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L2113-L2146) | 2113-2146 | `native_thread_create0` (`pthread_create`) |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1821-L1836) | 1821-1836 | `native_thread_dedicated_inc` |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1324-L1327) | 1324-1327 | `MINIMUM_SNT = 0` 定義 |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L2185-L2218) | 2185-2218 | `native_thread_create0` (`pthread_create`) |
 
 ## 次のステップ
 

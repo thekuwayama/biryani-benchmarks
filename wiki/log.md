@@ -80,7 +80,7 @@ default_max_cpu=8 を sysconf(_SC_NPROCESSORS_ONLN) に変更する PR 候補。
 SNT 補充の頻繁な pthread_create（CPU ~10%）を削減する Issue 候補。改善アイデア3案（ヒステリシス・max_cpu 増加・ノンブロッキング I/O）。次ステップは RUBY_MAX_CPU を変えた実測。
 
 ## [2026-05-17] internals | pthread wakeup パスの正確な解明
-`ractor_sync.c` の `rb_ractor_sched_wakeup` with `pthread_cond_broadcast` は `#else // win32` ブロック内。**Linux (pthread) では走らない**。pthread 版は `thread_pthread.c:1366` で `r_th` を M:N スケジューラ経由で起こす（`thread_sched_to_ready_common` → `rb_native_cond_signal`）。
+`ractor_sync.c` の `rb_ractor_sched_wakeup` with `pthread_cond_broadcast` は `#else // win32` ブロック内。**Linux (pthread) では走らない**。pthread 版は `thread_pthread.c:1428` で `r_th` を M:N スケジューラ経由で起こす（`thread_sched_to_ready_common` → `rb_native_cond_signal`）。
 
 ## [2026-05-17] finding | futex 11% の真因は M:N スケジューラの dedicated NT
 biryani の `IO#read` (47.9%) はブロッキング I/O → 各スレッドが dedicated SNT を取得 → I/O 完了時に `rb_native_cond_signal(&th->nt->cond.readyq)` で起こす。FlameGraph の futex ~11% はここが出所。Ractor send ではない。

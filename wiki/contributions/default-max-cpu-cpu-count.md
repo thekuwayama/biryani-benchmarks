@@ -1,23 +1,29 @@
 ---
 date: 2026-05-17
-updated: 2026-05-23
+updated: 2026-06-13
 type: pr
-status: 提出済み
-pr: submitted
+status: マージ済み
+pr: merged (e98f95b4fd)
 ---
 
 # `default_max_cpu` を物理 CPU 数に変更する
 
-## 問題・提案
+## 問題・提案（マージ済み）
 
-`thread_pthread.c:1735` のハードコードされた `default_max_cpu = 8` を
-実際の物理 CPU 数（`sysconf(_SC_NPROCESSORS_ONLN)` 等）に変更する。
+`thread_pthread.c:1802` のハードコードされた `default_max_cpu = 8` を
+実際の物理 CPU 数（`sysconf(_SC_NPROCESSORS_ONLN)` 等）に変更する PR を提出し、
+commit `e98f95b4fd` としてマージされた。
+
+マージ前の旧コード（`thread_pthread.c:1802` 相当箇所）：
 
 ```c
-// 現在（thread_pthread.c:1735）
+// before（v4.0.2 時点）
 const int default_max_cpu = 8; // TODO: CPU num?
+```
 
-// 提案
+マージ後（現在の `thread_pthread.c:1802`）：
+
+```c
 #if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
     long nprocessors = sysconf(_SC_NPROCESSORS_ONLN);
     const int default_max_cpu = (nprocessors > 0) ? (int)nprocessors : 8;
@@ -138,17 +144,17 @@ thread_pthread.c では Win32 分岐は不要なので `HAVE_SYSCONF && _SC_NPRO
 
 詳細: [scenarios/sweep-ruby-max-cpu](../scenarios/sweep-ruby-max-cpu.md)
 
-## 変更後のコード
+## マージ済みコード（現在の状態）
 
-`thread_pthread.c` の `ruby_mn_threads_params()` 内、変更箇所のみ抜粋：
+`thread_pthread.c` の `ruby_mn_threads_params()` 内、変更箇所：
 
 ```c
-// before
+// before（v4.0.2）
     const char *max_cpu_cstr = getenv("RUBY_MAX_CPU");
     const int default_max_cpu = 8; // TODO: CPU num?
     int max_cpu = default_max_cpu;
 
-// after
+// after（e98f95b4fd、現在）
     const char *max_cpu_cstr = getenv("RUBY_MAX_CPU");
 #if defined(HAVE_SYSCONF) && defined(_SC_NPROCESSORS_ONLN)
     long nprocessors = sysconf(_SC_NPROCESSORS_ONLN);
@@ -161,10 +167,6 @@ thread_pthread.c では Win32 分岐は不要なので `HAVE_SYSCONF && _SC_NPRO
 
 変更量: 1 行削除 → 5 行に展開（`#if` ブロック）。
 
-## 変更量
-
-`thread_pthread.c:1735` の 1 行変更 → `#if` による 5 行に展開。
-
 ## 懸念点
 
 - **CPU バウンドワークロードでの影響**: ~~未測定~~ → **測定済み。cpu=4 が +5.5% 優位**（2026-05-23）
@@ -175,16 +177,13 @@ thread_pthread.c では Win32 分岐は不要なので `HAVE_SYSCONF && _SC_NPRO
 ## 次のステップ
 
 1. ~~CPU バウンドなベンチマークでも比較する~~ → **完了（2026-05-23、cpu=4 が +5.5%）**
-2. ruby/ruby に PR を提出する
-   - タイトル候補: `Use nprocessors as default_max_cpu for M:N scheduler`
-   - 対象ブランチ: `master`
-   - レビュアー: ko1（TODO を書いた本人）
+2. ~~ruby/ruby に PR を提出する~~ → **マージ済み（commit `e98f95b4fd`、2026-06-13）**
 
 ## 関連する ruby/ruby のコード
 
 | ファイル | 行 | 内容 |
 |----------|---|------|
-| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1734-L1745) | 1734-1745 | `default_max_cpu = 8` の設定箇所・変更対象 |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1801-L1812) | 1801-1812 | `default_max_cpu` の設定箇所（sysconf 版・マージ済み） |
 | [`thread_pthread_mn.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread_mn.c#L130-L139) | 130-139 | `sysconf(_SC_PAGESIZE)` の使用例（ガードなし） |
 | [`ext/etc/etc.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ext/etc/etc.c#L1014-L1121) | 1014-1121 | `_SC_NPROCESSORS_ONLN` の guard パターン先例 |
 | [`thread_pthread_mn.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread_mn.c#L421-L423) | 421-423 | `max_cpu` を上限に使う補充条件 |

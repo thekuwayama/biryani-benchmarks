@@ -35,8 +35,8 @@ Ractor::Port#send
        └─ ractor_send_basket          # lock → enqueue → unlock
             └─ ractor_wakeup_all      # ractor_sync.c:972
                  └─ rb_ractor_sched_wakeup(r, waiter->th)  # thread_pthread.c:1366
-                      └─ thread_sched_to_ready_common(sched, r_th, ...)  # L.795
-                           └─ thread_sched_wakeup_running_thread(sched, r_th, ...)  # L.762
+                      └─ thread_sched_to_ready_common(sched, r_th, ...)  # L.802
+                           └─ thread_sched_wakeup_running_thread(sched, r_th, ...)  # L.769
                                 └─ rb_native_cond_signal(&r_th->nt->cond.readyq)  # per-SNT signal!
 ```
 
@@ -71,7 +71,7 @@ Win32 ブロック内の `rb_ractor_sched_wakeup` では `th` 引数が無視さ
 |---|---|---|
 | 動作 | 同じ条件変数で待つ**全スレッド**を起こす | **1 スレッド**だけを起こす |
 | コスト | 不要な wakeup が多発（thundering herd） | 最小限 |
-| ruby/ruby での使用箇所 | `ractor_sync.c` の Win32 ブロック内のみ | Linux の M:N スケジューラ（`thread_pthread.c:1366`） |
+| ruby/ruby での使用箇所 | `ractor_sync.c` の Win32 ブロック内のみ | Linux の M:N スケジューラ（`thread_pthread.c:1428`） |
 | biryani（Linux）での実行 | **走らない** | 実際に走るパス |
 
 Linux では `rb_ractor_sched_wakeup` が `waiter->th`（起こすべきスレッド）を正しく受け取り、

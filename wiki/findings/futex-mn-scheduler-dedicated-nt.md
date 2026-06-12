@@ -24,8 +24,8 @@ rb_ractor_sched_wait (thread_pthread.c:1330)
 
 ```
 rb_ractor_sched_wakeup (thread_pthread.c:1366)
-  └─ thread_sched_to_ready_common (L.795)
-       └─ thread_sched_wakeup_running_thread (L.762)
+  └─ thread_sched_to_ready_common (L.802)
+       └─ thread_sched_wakeup_running_thread (L.769)
             └─ [th_has_dedicated_nt が true のとき]
                  rb_native_cond_signal(&next_th->nt->cond.readyq)  # ← futex_wake
 ```

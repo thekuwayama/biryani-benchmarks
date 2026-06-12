@@ -59,7 +59,7 @@ end
 
 ## idle Ractor と SNT の関係
 
-`Ractor.recv` でブロックした Ractor は [`rb_ractor_sched_wait`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1330)（`thread_pthread.c:1330`）経由で
+`Ractor.recv` でブロックした Ractor は [`rb_ractor_sched_wait`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1391)（`thread_pthread.c:1391`）経由で
 M:N スケジューラに入り、SNT（Shared Native Thread）を解放して休眠する。
 
 → プールした idle Ractors は SNT を占有しない。Ruby Ractor オブジェクトとして `vm->ractor.cnt` に
@@ -76,7 +76,7 @@ if (snt_cnt < schedulable_ractor_cnt &&
 }
 ```
 
-**snt_cnt が減る原因**（thread_pthread.c:1749-1763）：
+**snt_cnt が減る原因**（thread_pthread.c:1821-1836）：
 
 ```c
 native_thread_dedicated_inc():

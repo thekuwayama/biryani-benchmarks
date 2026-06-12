@@ -69,7 +69,7 @@ Ractor とノンブロッキング I/O の組み合わせは可能か？ 仮に 
 
 **再調査結果**（2026-05-17）:
 `rb_ractor_sched_wakeup` の `pthread_cond_broadcast` は `#else // win32` ブロック内。
-**Linux (pthread) では走らない。** pthread 版は `thread_pthread.c:1366` で `r_th` を直接使い、
+**Linux (pthread) では走らない。** pthread 版は `thread_pthread.c:1428` で `r_th` を直接使い、
 M:N スケジューラ経由で `rb_native_cond_signal`（すでに signal）を発行する。
 
 → [contributions/cond-signal-vs-broadcast](../contributions/cond-signal-vs-broadcast.md) はクローズ。
