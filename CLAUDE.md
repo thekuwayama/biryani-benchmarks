@@ -70,28 +70,28 @@ wiki ページに図が必要な場合は **Mermaid** を使う。ただし呼�
 
 wiki ページ内で ruby/ruby のソースファイルや行番号を引用するときは、**必ず GitHub permalink にリンクする**。
 
-ベース URL（サブモジュールのバージョン v4.0.2 に固定）:
+ベース URL（サブモジュールのコミット `e98f95b4fd830c5e89941702e7b216e3212ac778` に固定）:
 
 ```
-https://github.com/ruby/ruby/blob/v4.0.2/<ファイルパス>#L<行番号>
+https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/<ファイルパス>#L<行番号>
 ```
 
 | 形式 | 例 |
 |------|---|
-| 単一行 | `https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1366` |
-| 範囲 | `https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1734-L1745` |
+| 単一行 | `https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1366` |
+| 範囲 | `https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1734-L1745` |
 
 **Markdown での書き方**:
 
 ```markdown
 <!-- インライン参照 -->
-[`rb_ractor_sched_wakeup`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1366)（`thread_pthread.c:1366`）
+[`rb_ractor_sched_wakeup`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1366)（`thread_pthread.c:1366`）
 
 <!-- テーブルの「ファイル」列 -->
-| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1734-L1745) | 1734-1745 | 内容 |
+| [`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1734-L1745) | 1734-1745 | 内容 |
 
 <!-- ファイルヘッダ -->
-**[`ractor_sync.c`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_sync.c)**
+**[`ractor_sync.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c)**
 ```
 
 **例外**: コードブロック（` ``` ` ）内のコメントはリンク不可なのでそのまま。`log.md` や `questions/README.md` の流動的なメモも必須ではない。

@@ -89,7 +89,7 @@ SNT が GRQ を取り出す（deq）タイミング:
 `SNT_KEEP_SECONDS` との関係: GRQ が空＝「全 Ractor が IO 待ちか終了済み」の状態。
 この状態が続くと SNT がアイドルになり、`SNT_KEEP_SECONDS` 秒後にタイムアウト終了する。
 
-ソース: [`ractor_sched_deq`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1270)（`thread_pthread.c:1270`）、[`rb_ractor_sched_enq`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1248)（`thread_pthread.c:1248`）
+ソース: [`ractor_sched_deq`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1270)（`thread_pthread.c:1270`）、[`rb_ractor_sched_enq`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1248)（`thread_pthread.c:1248`）
 
 ### dedicated SNT（専有ネイティブスレッド）
 
@@ -109,7 +109,7 @@ flowchart LR
     end
 ```
 
-dedicated SNT になると [`native_thread_dedicated_inc`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1009)（`thread_pthread.c:1009`）が呼ばれ、
+dedicated SNT になると [`native_thread_dedicated_inc`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1009)（`thread_pthread.c:1009`）が呼ばれ、
 スレッドは `rb_native_cond_wait(&th->nt->cond.readyq, ...)` で眠る。
 I/O 完了時に `rb_native_cond_signal(&th->nt->cond.readyq)` で起こされる。
 
@@ -138,7 +138,7 @@ stateDiagram-v2
     terminated --> [*]
 ```
 
-ソース: [`ractor_status_set`](https://github.com/ruby/ruby/blob/v4.0.2/ractor.c#L164)（`ractor.c:164`）、状態名は [`ractor_status_str`](https://github.com/ruby/ruby/blob/v4.0.2/ractor.c#L152)（`ractor.c:152`）
+ソース: [`ractor_status_set`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor.c#L164)（`ractor.c:164`）、状態名は [`ractor_status_str`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor.c#L152)（`ractor.c:152`）
 
 - **created**: メモリ確保済み、まだ実行開始前
 - **running**: Ruby コードを実行中
@@ -147,7 +147,7 @@ stateDiagram-v2
 
 ## 内部構造体
 
-### `rb_ractor_t`（[`ractor_core.h:68`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_core.h#L68)）
+### `rb_ractor_t`（[`ractor_core.h:68`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_core.h#L68)）
 
 Ractor の本体。`rb_ractor_struct` の typedef。
 
@@ -180,7 +180,7 @@ struct rb_ractor_struct {
 };
 ```
 
-### `rb_ractor_pub`（[`vm_core.h:2328`](https://github.com/ruby/ruby/blob/v4.0.2/vm_core.h#L2328)）
+### `rb_ractor_pub`（[`vm_core.h:2328`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/vm_core.h#L2328)）
 
 Ruby レベルから見える公開フィールド。
 
@@ -194,7 +194,7 @@ struct rb_ractor_pub {
 };
 ```
 
-### `rb_ractor_sync`（[`ractor_core.h:15`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_core.h#L15)）
+### `rb_ractor_sync`（[`ractor_core.h:15`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_core.h#L15)）
 
 スレッド間で共有されるすべての状態。ractor lock（`sync.lock`）で保護される。
 
@@ -218,7 +218,7 @@ struct rb_ractor_sync {
 };
 ```
 
-### `ractor_basket`（[`ractor_sync.c:198`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_sync.c#L198)）
+### `ractor_basket`（[`ractor_sync.c:198`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L198)）
 
 キューを流れるメッセージ1件。
 
@@ -237,7 +237,7 @@ struct ractor_basket {
 };
 ```
 
-### `ractor_queue`（[`ractor_sync.c:246`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_sync.c#L246)）
+### `ractor_queue`（[`ractor_sync.c:246`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L246)）
 
 メッセージの連結リストキュー。`recv_queue`（共通着信）と per-port キューの両方に使われる。
 
@@ -248,7 +248,7 @@ struct ractor_queue {
 };
 ```
 
-### `ractor_waiter`（[`ractor_sync.c:860`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_sync.c#L860)）
+### `ractor_waiter`（[`ractor_sync.c:860`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L860)）
 
 `ractor_wait` 中のスレッドを表す。`sync.waiters` リストに積まれる。
 

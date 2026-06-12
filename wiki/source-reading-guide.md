@@ -79,7 +79,7 @@ flowchart LR
 
 まず「何があるか」を頭に入れる。実行イメージより先に構造体を眺める。
 
-**[`ractor_core.h`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_core.h)**
+**[`ractor_core.h`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_core.h)**
 
 | 構造体 | 内容 | wiki |
 |--------|------|------|
@@ -93,11 +93,11 @@ flowchart LR
 
 ## ステップ 2：Ractor のライフサイクルを追う
 
-**[`ractor.c`](https://github.com/ruby/ruby/blob/v4.0.2/ractor.c)**
+**[`ractor.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor.c)**
 
 | 読むべき関数 | 内容 | wiki |
 |------------|------|------|
-| [`ractor_status_set`（:164）](https://github.com/ruby/ruby/blob/v4.0.2/ractor.c#L164) | `created → running → blocking → terminated` の状態遷移 | [ractor-overview](internals/ractor-overview.md) |
+| [`ractor_status_set`（:164）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor.c#L164) | `created → running → blocking → terminated` の状態遷移 | [ractor-overview](internals/ractor-overview.md) |
 | `ractor_create`（近辺） | `Ractor.new` の実装、スレッド生成への入り口 | [biryani-ractor-architecture](internals/biryani-ractor-architecture.md) |
 
 ファイルが長いので `ractor_status_set` を grep して前後を読む形で十分。
@@ -106,14 +106,14 @@ flowchart LR
 
 ## ステップ 3：メッセージ送受信と wakeup
 
-**[`ractor_sync.c`](https://github.com/ruby/ruby/blob/v4.0.2/ractor_sync.c)**
+**[`ractor_sync.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c)**
 
 | 読むべき関数 | 内容 | wiki |
 |------------|------|------|
-| [`ractor_send_basket`（:1185）](https://github.com/ruby/ruby/blob/v4.0.2/ractor_sync.c#L1185) | `Port#send` の実装。enqueue → `ractor_wakeup_all` の流れ | [ractor-port-implementation](internals/ractor-port-implementation.md) |
-| [`ractor_wakeup_all`（:972）](https://github.com/ruby/ruby/blob/v4.0.2/ractor_sync.c#L972) | waiter を順に起こすループ | [ractor-sync-wakeup](internals/ractor-sync-wakeup.md) |
+| [`ractor_send_basket`（:1185）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L1185) | `Port#send` の実装。enqueue → `ractor_wakeup_all` の流れ | [ractor-port-implementation](internals/ractor-port-implementation.md) |
+| [`ractor_wakeup_all`（:972）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L972) | waiter を順に起こすループ | [ractor-sync-wakeup](internals/ractor-sync-wakeup.md) |
 | `rb_ractor_sched_wakeup` | **Linux では走らない**（`#ifdef RUBY_THREAD_PTHREAD_H` の外側） | [ractor-sync-wakeup](internals/ractor-sync-wakeup.md) |
-| [`ractor_selector__wait`（:1420）](https://github.com/ruby/ruby/blob/v4.0.2/ractor_sync.c#L1420) | `Ractor.select` が全ポートをポーリングするループ | [ractor-select-implementation](internals/ractor-select-implementation.md) |
+| [`ractor_selector__wait`（:1420）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L1420) | `Ractor.select` が全ポートをポーリングするループ | [ractor-select-implementation](internals/ractor-select-implementation.md) |
 
 [internals/ractor-sync-wakeup](internals/ractor-sync-wakeup.md) の「Linux の実際のコールチェーン」を手元に置いて読むと、どの行がどのステップか追いやすい。
 
@@ -123,25 +123,25 @@ flowchart LR
 
 2 ファイルをセットで読む。
 
-**[`thread_pthread.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c)**
+**[`thread_pthread.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c)**
 
 | 読むべき箇所 | 内容 | wiki |
 |------------|------|------|
-| [`:1261–1267`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1261-L1267) | `SNT_KEEP_SECONDS`・`MINIMUM_SNT` の定義 | [findings/snt-keep-seconds-disabled](findings/snt-keep-seconds-disabled.md) |
-| [`:1270`（`ractor_sched_deq`）](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1270) | SNT が GRQ から Ractor を取り出すループ。`SNT_KEEP_SECONDS` のタイムアウト分岐もここ | [mn-snt-pool-growth-shrink](internals/mn-snt-pool-growth-shrink.md) |
-| [`:1248`（`rb_ractor_sched_enq`）](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1248) | Ractor を GRQ に入れる | [ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md) |
-| [`:1330`（`rb_ractor_sched_wait`）](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1330) | M:N スケジューラに入って眠る | [ractor-sync-wakeup](internals/ractor-sync-wakeup.md) |
-| [`:1366`（`rb_ractor_sched_wakeup`）](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1366) | pthread 版の wakeup 実装。`rb_native_cond_signal` を発行 | [ractor-sync-wakeup](internals/ractor-sync-wakeup.md) |
-| [`:1735`（`ruby_mn_threads_params`）](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1735) | `default_max_cpu` の設定箇所（提出済み PR の変更点） | [contributions/default-max-cpu-cpu-count](contributions/default-max-cpu-cpu-count.md) |
+| [`:1261–1267`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1261-L1267) | `SNT_KEEP_SECONDS`・`MINIMUM_SNT` の定義 | [findings/snt-keep-seconds-disabled](findings/snt-keep-seconds-disabled.md) |
+| [`:1270`（`ractor_sched_deq`）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1270) | SNT が GRQ から Ractor を取り出すループ。`SNT_KEEP_SECONDS` のタイムアウト分岐もここ | [mn-snt-pool-growth-shrink](internals/mn-snt-pool-growth-shrink.md) |
+| [`:1248`（`rb_ractor_sched_enq`）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1248) | Ractor を GRQ に入れる | [ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md) |
+| [`:1330`（`rb_ractor_sched_wait`）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1330) | M:N スケジューラに入って眠る | [ractor-sync-wakeup](internals/ractor-sync-wakeup.md) |
+| [`:1366`（`rb_ractor_sched_wakeup`）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1366) | pthread 版の wakeup 実装。`rb_native_cond_signal` を発行 | [ractor-sync-wakeup](internals/ractor-sync-wakeup.md) |
+| [`:1735`（`ruby_mn_threads_params`）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1735) | `default_max_cpu` の設定箇所（提出済み PR の変更点） | [contributions/default-max-cpu-cpu-count](contributions/default-max-cpu-cpu-count.md) |
 
-**[`thread_pthread_mn.c`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread_mn.c)**
+**[`thread_pthread_mn.c`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread_mn.c)**
 
 | 読むべき箇所 | 内容 | wiki |
 |------------|------|------|
-| [`:408`（`native_thread_check_and_create_shared`）](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread_mn.c#L408) | SNT 補充ロジック | [ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md) |
-| [`:421`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread_mn.c#L421) | 補充条件の if 文（`snt_cnt < max_cpu`） | [mn-snt-pool-growth-shrink](internals/mn-snt-pool-growth-shrink.md) |
-| [`:695`（`timer_thread_register_waiting`）](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread_mn.c#L695) | I/O / タイムアウト待機の登録。タイムアウトなし → O(1)、あり → O(n) ソート挿入 | [timer-waiting-list-sort](internals/timer-waiting-list-sort.md) |
-| [`:833`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread_mn.c#L833) | O(n) 挿入の TODO 箇所。biryani の IO#read はここを通らない（タイムアウトなし） | [timer-waiting-list-sort](internals/timer-waiting-list-sort.md) |
+| [`:408`（`native_thread_check_and_create_shared`）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread_mn.c#L408) | SNT 補充ロジック | [ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md) |
+| [`:421`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread_mn.c#L421) | 補充条件の if 文（`snt_cnt < max_cpu`） | [mn-snt-pool-growth-shrink](internals/mn-snt-pool-growth-shrink.md) |
+| [`:695`（`timer_thread_register_waiting`）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread_mn.c#L695) | I/O / タイムアウト待機の登録。タイムアウトなし → O(1)、あり → O(n) ソート挿入 | [timer-waiting-list-sort](internals/timer-waiting-list-sort.md) |
+| [`:833`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread_mn.c#L833) | O(n) 挿入の TODO 箇所。biryani の IO#read はここを通らない（タイムアウトなし） | [timer-waiting-list-sort](internals/timer-waiting-list-sort.md) |
 
 ---
 

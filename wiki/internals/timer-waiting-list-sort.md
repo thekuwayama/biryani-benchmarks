@@ -7,14 +7,14 @@ tags: [internals, finding]
 
 ## サマリー
 
-`timer_thread_register_waiting`（[`thread_pthread_mn.c:833`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread_mn.c#L833)）は、
+`timer_thread_register_waiting`（[`thread_pthread_mn.c:833`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread_mn.c#L833)）は、
 タイムアウト付き待機エントリをソート済みリストに O(n) で挿入する。
 ko1 自身が `// TODO: O(n)` とコメントを残している。
 **ただし biryani のワークロードはこのパスを通らない**ため、biryani での実測根拠づけは不可能。
 
 ## 挿入パスの分岐
 
-[`timer_thread_register_waiting`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread_mn.c#L695)
+[`timer_thread_register_waiting`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread_mn.c#L695)
 は `timer_th.waiting` リストへの挿入を 2 通りに分ける：
 
 ```c
@@ -44,10 +44,10 @@ else {
 | `IO#wait(fd, events, timeout)` | `>0` | **O(n)** |
 
 biryani が多用する `IO#read` / `IO#write` は `timeout=NULL` で呼ばれるため、
-`thread_io_wait_events`（[`thread.c:1902`](https://github.com/ruby/ruby/blob/v4.0.2/thread.c#L1902)）
+`thread_io_wait_events`（[`thread.c:1902`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread.c#L1902)）
 内で `prel = NULL` になり、O(1) パスを通る。
 
-`SNT_KEEP_SECONDS` のアイドル待機は [`ractor_sched_deq`](https://github.com/ruby/ruby/blob/v4.0.2/thread_pthread.c#L1286-L1304)
+`SNT_KEEP_SECONDS` のアイドル待機は [`ractor_sched_deq`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1286-L1304)
 内で `native_cond_timedwait` を直接呼ぶため、`timer_th.waiting` には一切入らない。
 
 ## O(n) が問題になるシナリオ
