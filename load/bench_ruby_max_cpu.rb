@@ -12,7 +12,7 @@ N    = 10_000
 C    = 25
 M    = 50
 T    = 10
-CPUS = [nil, 1, 2, 4, 8, 16, 32].freeze  # nil = RUBY_MAX_CPU 未設定（default_max_cpu=8 のパス）
+CPUS = [nil, 1, 2, 4, 8, 16, 32].freeze  # nil = RUBY_MAX_CPU 未設定（Ruby 4.0.5+ は default_max_cpu = 物理 CPU 数）
 
 SERVER_SCRIPT = <<~RUBY
   require 'socket'

@@ -18,7 +18,7 @@
 - [scenarios/baseline-default](scenarios/baseline-default.md) — デフォルト（-c50 -m100）: 4,981 req/s、latency 866ms
 - [scenarios/sweep-m-parameter](scenarios/sweep-m-parameter.md) — `-m` スイープ（1〜100）: ピーク m=50、6,183 req/s。レイテンシは m に線形比例
 - [scenarios/sweep-c-parameter](scenarios/sweep-c-parameter.md) — `-c` スイープ（10〜100、m=50 固定）: ピーク c=25、7,695 req/s（全体最高）
-- [scenarios/sweep-ruby-max-cpu](scenarios/sweep-ruby-max-cpu.md) — **RUBY_MAX_CPU スイープ（I/O バウンド）**: ピーク cpu=4、8,456 req/s。デフォルト8より+3.1%
+- [scenarios/sweep-ruby-max-cpu](scenarios/sweep-ruby-max-cpu.md) — **RUBY_MAX_CPU スイープ（I/O バウンド）**: 全3回実施。Ruby 4.0.5 unset で旧デフォルト比 +4.3%（PR 効果確認）
 - [scenarios/sweep-ruby-max-cpu-cpu-bound](scenarios/sweep-ruby-max-cpu-cpu-bound.md) — **RUBY_MAX_CPU スイープ（CPU バウンド）**: ピーク cpu=4、1,317 req/s。デフォルト8より+5.5%
 
 ---

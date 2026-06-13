@@ -35,6 +35,7 @@ Connection Ractor（接続ごと）
 | -c50 -m100（デフォルト） | 5,100 | 4,981 |
 | -c25 -m50（最適） | **1,300** | **7,695** |
 | -c25 -m50 RUBY_MAX_CPU=4 | 1,300 | **8,456**（+10%） |
+| -c25 -m50 Ruby 4.0.5 unset | 1,300 | **7,464**（旧デフォルト比 +4.3%） |
 
 4コア環境での最適 Ractor 数は 1,000〜1,500 程度。オーバーサブスクリプションで急落する。
 
@@ -82,7 +83,7 @@ unknown             ~24%
 
 Ruby 3.3+ の非 main Ractor は M:N スケジューラを使用。M Ruby スレッドを N OS スレッド（SNT）で処理。
 
-- デフォルト SNT 上限: `default_max_cpu` = 物理 CPU 数（マージ済み（e98f95b4fd）。変更前は固定値 8）
+- デフォルト SNT 上限: `default_max_cpu` = 物理 CPU 数（マージ済み（e98f95b4fd）、Ruby 4.0.5 以降に含まれる。変更前は固定値 8）
 - `IO#read` → dedicated SNT 取得 → `snt_cnt--` → `native_thread_check_and_create_shared` で補充
 - ブロック中の Ractor は SNT を解放して休眠（M:N の恩恵）
 

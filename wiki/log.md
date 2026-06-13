@@ -4,6 +4,14 @@
 
 ---
 
+## [2026-06-13] benchmark | Ruby 4.0.5 での RUBY_MAX_CPU スイープ（PR 効果確認）
+
+- Ruby 4.0.5 をインストール（`default_max_cpu = sysconf(_SC_NPROCESSORS_ONLN)` が実際に動作）
+- unset: 7,464 req/s（旧 4.0.2 = 8 固定: 7,155 → **+4.3%**）— PR の効果をデータで確認
+- ピーク: cpu=2（8,456 req/s）— 4.0.2 では cpu=4 がピーク。4.0.5 でスケジューラに他の変更が入った可能性あり
+
+---
+
 ## [2026-06-13] maintenance | submodule 更新・wiki 行番号修正・PR マージ済み更新
 
 - `raw/ruby-src` を v4.0.2 → commit `e98f95b4fd`（Use nprocessors as default_max_cpu for M:N scheduler）に更新
