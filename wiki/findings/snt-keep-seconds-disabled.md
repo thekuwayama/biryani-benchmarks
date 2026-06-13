@@ -109,9 +109,69 @@ if (((int)snt_cnt < MINIMUM_SNT) ||   // snt_cnt は unsigned → (int)snt_cnt <
 
 詳細: [findings/rperf-wall-vs-perf-cpu](rperf-wall-vs-perf-cpu.md), [findings/flamegraph-c25-m50-vs-baseline](flamegraph-c25-m50-vs-baseline.md)
 
+## SNT_KEEP_SECONDS が有効にできない根本原因（2026-06-13 調査）
+
+`SNT_KEEP_SECONDS = 0` が単なるデフォルト値ではなく、**クリーンアップ未実装によるメモリリーク**が理由であることが判明した。
+
+### nt 構造体の確保と解放の非対称
+
+SNT 作成時（`native_thread_check_and_create_shared` → `native_thread_alloc`）:
+
+```c
+// thread_pthread.c:2246-2251
+struct rb_native_thread *nt = ZALLOC(struct rb_native_thread);  // (1)
+nt->nt_context = ruby_xmalloc(sizeof(struct coroutine_context)); // (2)
+// native_thread_create0 内で:
+nt->altstack = rb_allocate_sigaltstack();                        // (3) USE_SIGALTSTACK 時
+```
+
+SNT タイムアウト終了時（`nt_start` の timeout break → `return NULL`）:
+
+→ **(1)(2)(3) はいずれも解放されない。**
+
+### 既存 TODO がある
+
+[`rb_threadptr_sched_free`（:2407）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L2407) の SNT パス（`!malloc_stack`）:
+
+```c
+// thread_pthread.c:2415-2417
+else {
+    nt_free_stack(th->sched.context_stack);  // Ruby スレッドのスタックは解放
+    // TODO: how to free nt and nt->altstack?  ← ko1 が残した TODO
+}
+```
+
+### 正しいクリーンアップ手順はすでにある
+
+[`native_thread_destroy_atfork`（:1880）](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1880) が正しい解放順を示している:
+
+```c
+// thread_pthread.c:1894-1896
+RB_ALTSTACK_FREE(nt->altstack);   // (3) を解放
+SIZED_FREE(nt->nt_context);       // (2) を解放
+SIZED_FREE(nt);                   // (1) を解放
+```
+
+`native_thread_destroy` を呼べば条件変数も破棄できる。
+
+### 修正の方向性
+
+`nt_start` のタイムアウト break の直前に 2〜3 行追加するだけで SNT の cleanup が完成する:
+
+```c
+// timeout -> deleted.
+native_thread_destroy(nt);  // cond 破棄 + altstack/nt_context/nt 解放
+ruby_xfree(nt);
+break;
+```
+
+ただし `native_thread_destroy_atfork` と `native_thread_destroy` の役割（fork 後 vs 通常）を確認してから実装すること。
+
+詳細: [contributions/snt-keep-seconds-enable](../contributions/snt-keep-seconds-enable.md)
+
 ## 未測定の事項
 
-- `SNT_KEEP_SECONDS = 5` に設定した場合の biryani スループット変化
+- `SNT_KEEP_SECONDS = 5` に設定した場合の biryani スループット変化（クリーンアップ修正後に試すべき）
 - 長時間稼働時の実際の `snt_cnt` 推移（増加し続けるか？）
 - biryani 終了後の SNT 数（max_cpu を超えて蓄積しているか？）
 

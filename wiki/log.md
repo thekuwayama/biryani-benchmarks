@@ -4,6 +4,16 @@
 
 ---
 
+## [2026-06-13] internals | SNT_KEEP_SECONDS 無効の根本原因判明 — nt クリーンアップ未実装
+
+- `nt_start` タイムアウト終了時に `nt` 構造体・`nt_context`・`altstack` が一切解放されないことを確認
+- `rb_threadptr_sched_free`（:2417）に「**TODO: how to free nt and nt->altstack?**」が残存（ko1 が認識済み）
+- `native_thread_destroy_atfork`（:1880）に正しいクリーンアップ手順がある → 修正案は 2〜3 行
+- PR 候補: `nt_start` に cleanup 追加 → `SNT_KEEP_SECONDS` 有効化の 2 段階
+- `wiki/contributions/snt-keep-seconds-enable.md` を新設
+
+---
+
 ## [2026-06-13] benchmark | Ruby 4.0.5 での RUBY_MAX_CPU スイープ
 
 - Ruby 4.0.5（revision 64336ffd0e、2026-05-20）をインストール
