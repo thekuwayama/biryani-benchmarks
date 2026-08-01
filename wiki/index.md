@@ -55,7 +55,7 @@
 
 ## 未解決の疑問
 
-- [questions/README](questions/README.md) — Q1〜Q6（Q1・Q2・Q3・Q4・Q5 解決済み。Q6: 調査中 — SNT_KEEP_SECONDS が SNT 縮小の鍵）
+- [questions/README](questions/README.md) — Q1〜Q7（Q1・Q2・Q3・Q4・Q5 解決済み。Q6: 調査中 — SNT_KEEP_SECONDS が SNT 縮小の鍵。Q7: 未着手 — biryani ノンブロッキング化の実測）
 
 ---
 

@@ -4,6 +4,14 @@
 
 ---
 
+## [2026-08-01] question | Q7 追加 — biryani ノンブロッキング化の実測は未着手
+
+- Q2（ノンブロッキング化で epoll パスに乗れるか）は分岐ロジックからの推論であり、実測は未実施だったため Q7 として切り出した
+- 具体的な変更案（`server.rb:10-15` に `io.nonblock = true`、`frame.rb`/`connection.rb` の read/write を `read_nonblock`/`write_nonblock` + リトライに書き換え）を明記
+- 次のステップ: 実験ブランチで書き換えて `-c25 -m50` FlameGraph を再取得し `thread_create_core` の変化を確認（`/biryani-benchmark` 領域、未着手）
+
+---
+
 ## [2026-08-01] internals | Q2 解答 — ノンブロッキング I/O 化で M:N スケジューラの epoll パスに乗れるか
 
 - `thread.c` の `rb_thread_io_blocking_call` / `thread_io_mn_schedulable` を精査。M:N スケジューラの epoll 待ちパス（`thread_sched_wait_events`、thread_pthread_mn.c）に入るのは `read(2)` が `EAGAIN` を返したときだけと判明

@@ -101,6 +101,7 @@ IO#read のたびの SNT 補充サイクルが構造的に発生しなくなる�
 
 - biryani 側で `IO#read_nonblock` + `IO#wait_readable` を使う実験ブランチを作り、
   `-c25 -m50` で FlameGraph を再取得して `thread_create_core` / futex の変化を実測する
+  → 具体的な変更案・確認事項は [[../questions/README]] の Q7 に切り出した
 - これは ruby/ruby 本体の変更ではなく **biryani（アプリケーションレベル）の書き換え**なので、
   ruby/ruby へのコントリビュートには直結しない。ただし実測結果は
   [[ractor-mn-snt-lifecycle]] や [[../contributions/snt-replenishment-overhead]] の

@@ -114,3 +114,37 @@ FlameGraph の `thread_create_core` 比率の変化を確認する。
 詳細: [findings/snt-keep-seconds-disabled](../findings/snt-keep-seconds-disabled.md), [contributions/snt-replenishment-overhead](../contributions/snt-replenishment-overhead.md)
 
 関連: [internals/ractor-mn-snt-lifecycle](../internals/ractor-mn-snt-lifecycle.md), [findings/futex-mn-scheduler-dedicated-nt](../findings/futex-mn-scheduler-dedicated-nt.md)
+
+### Q7: biryani に `socket.accept.io.nonblock = true` を入れると実際どうなるか（→ 未着手）
+
+Q2 で「原理的には epoll ベースの M:N スケジューラ経路に乗れるはず」と結論したが、これは
+ソースコードの分岐ロジックからの推論であり、**実測はまだ行っていない**。
+
+具体的な変更案（`raw/biryani/lib/biryani/server.rb:10-15`）:
+
+```ruby
+Ractor.new(socket.accept, @proc) do |io, proc|
+  io.nonblock = true    # ← 追加
+  conn = Connection.new(proc)
+  conn.serve(io)
+  io.close
+end
+```
+
+これだけでは不十分で、`frame.rb:138,143`（`Frame.read` の `io.read`）と `connection.rb:300,351`
+（`io.write`、preface 読み込みの `io.read`）を `read_nonblock`/`write_nonblock` + `rescue
+IO::WaitReadable/WaitWritable` + リトライに書き換える必要がある。単に `nonblock = true` だけ
+入れて呼び出し側を変えなければ、`read` がブロッキング前提のまま `Errno::EAGAIN` を吐いて
+即座に例外で落ちる可能性が高い。
+
+**確認したいこと**:
+- 実際に FlameGraph で `thread_create_core` ~10% が下がるか
+- 短命コネクション・低同時実行数で epoll 登録コストが逆にオーバーヘッドにならないか（[internals/nonblocking-io-mn-scheduler-path](../internals/nonblocking-io-mn-scheduler-path.md) のリスク欄で指摘済み）
+- スループット（req/s）・レイテンシに正味のプラスがあるか
+
+**次のステップ**: biryani の実験ブランチで上記の書き換えを行い、`-c25 -m50` で
+h2load ベンチマーク＋ FlameGraph を再取得して比較する（`/biryani-benchmark` 領域）。
+
+詳細: [internals/nonblocking-io-mn-scheduler-path](../internals/nonblocking-io-mn-scheduler-path.md)
+
+関連: [internals/ractor-mn-snt-lifecycle](../internals/ractor-mn-snt-lifecycle.md), [internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md)
