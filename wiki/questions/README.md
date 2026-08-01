@@ -45,12 +45,25 @@ C 実装では `ractor_selector__wait`（ractor_sync.c:1420）が毎 wakeup で�
 
 実装: [internals/ractor-select-implementation](../internals/ractor-select-implementation.md)
 
-### Q2: `IO#read` の 47.9% はブロッキング I/O か
+### Q2: `IO#read` の 47.9% はブロッキング I/O か（→ 解決）
 
-biryani はノンブロッキング I/O を使っていないため、47.9% がソケット読み込み待ちになっている。
-Ractor とノンブロッキング I/O の組み合わせは可能か？ 仮に `io_uring` や `epoll` を使えば構造的に変わるか？
+**回答**（2026-08-01）:
 
-関連: [findings/rperf-wall-vs-perf-cpu](../findings/rperf-wall-vs-perf-cpu.md)
+biryani は `socket.accept` で得た `IO` をブロッキングモードのまま使用している（`raw/biryani/lib/biryani/server.rb`）。
+`rb_thread_io_blocking_call`（thread.c:1956）の分岐ロジックにより、M:N スケジューラの
+epoll 待ちパス（`thread_sched_wait_events`、thread_pthread_mn.c:556）に入るのは
+`read(2)` が `EAGAIN`/`EWOULDBLOCK` を返したときだけ。ブロッキングソケットでは `read()` は
+決して `EAGAIN` を返さず常にカーネル内でブロックするため、毎回 `native_thread_dedicated_inc`
+（dedicated SNT 取得）を経由し、epoll パスは一度も使われない。
+
+ソケットを `O_NONBLOCK` にすれば `read_nonblock` が `EAGAIN` で復帰 → epoll ベースの共有
+`timer_thread` 監視に切り替わり、dedicated SNT を経由しなくなる。理論上は
+`thread_create_core ~10%`（SNT 補充コスト）を構造的に低減できる可能性がある。ただし
+これは **biryani（アプリケーションレベル）の書き換え**であり、ruby/ruby 本体の変更ではない。実測は未実施。
+
+詳細: [internals/nonblocking-io-mn-scheduler-path](../internals/nonblocking-io-mn-scheduler-path.md)
+
+関連: [findings/rperf-wall-vs-perf-cpu](../findings/rperf-wall-vs-perf-cpu.md), [internals/ractor-mn-snt-lifecycle](../internals/ractor-mn-snt-lifecycle.md)
 
 ### Q3: Ractor プールは実装可能か、効果があるか（→ 解決）
 

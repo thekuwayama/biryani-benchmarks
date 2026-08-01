@@ -2,7 +2,7 @@
 
 **ゴール**: ruby/ruby の Ractor にパフォーマンス関連のコントリビュートをする。
 
-最終更新: 2026-06-13（submodule 更新 e98f95b4fd・行番号修正・default_max_cpu マージ済みに更新）
+最終更新: 2026-08-01（Q2 解決 — ノンブロッキング I/O 化で M:N スケジューラの epoll パスに乗れるか調査）
 
 ---
 
@@ -49,12 +49,13 @@
 - [internals/ractor-local-gc-status](internals/ractor-local-gc-status.md) — Ractor-local GC の現状（Ruby 4.0.2）：ko1 RubyKaigi 2025 講演との対比、インフラは布石段階、本体は未実装
 - [source-reading-guide](source-reading-guide.md) — ソースコード読み方ガイド（推奨読書順・関数・行番号）
 - [internals/timer-waiting-list-sort](internals/timer-waiting-list-sort.md) — `timer_th.waiting` の O(n) ソート挿入 — biryani とは無関係（I/O はタイムアウトなし → O(1) パスを通る）
+- [internals/nonblocking-io-mn-scheduler-path](internals/nonblocking-io-mn-scheduler-path.md) — **Q2 解答**: biryani をノンブロッキング I/O 化すれば epoll ベースの M:N スケジューラ経路に乗り、dedicated SNT を回避できる（実測未実施）
 
 ---
 
 ## 未解決の疑問
 
-- [questions/README](questions/README.md) — Q1〜Q6（Q1・Q3・Q4・Q5 解決済み。Q2: IO#read ノンブロッキック化。Q6: 調査中 — SNT_KEEP_SECONDS が SNT 縮小の鍵）
+- [questions/README](questions/README.md) — Q1〜Q6（Q1・Q2・Q3・Q4・Q5 解決済み。Q6: 調査中 — SNT_KEEP_SECONDS が SNT 縮小の鍵）
 
 ---
 

@@ -4,6 +4,16 @@
 
 ---
 
+## [2026-08-01] internals | Q2 解答 — ノンブロッキング I/O 化で M:N スケジューラの epoll パスに乗れるか
+
+- `thread.c` の `rb_thread_io_blocking_call` / `thread_io_mn_schedulable` を精査。M:N スケジューラの epoll 待ちパス（`thread_sched_wait_events`、thread_pthread_mn.c）に入るのは `read(2)` が `EAGAIN` を返したときだけと判明
+- biryani（`raw/biryani/lib/biryani/server.rb`）はブロッキングソケットのまま `IO#read` しており、`EAGAIN` が発生しないため epoll パスは一度も使われず、毎回 `native_thread_dedicated_inc`（dedicated SNT 取得）を経由している
+- ノンブロッキング化（`read_nonblock` + `wait_readable`）すれば dedicated SNT を経由しなくなり、`thread_create_core ~10%`（SNT 補充コスト）を構造的に低減できる可能性がある。ただし biryani（アプリケーションレベル）の書き換えであり、ruby/ruby 本体の変更ではない。実測は未実施
+- `wiki/internals/nonblocking-io-mn-scheduler-path.md` を新設、Q2 をクローズ
+- 次の実験候補: biryani をノンブロッキング化した実験ブランチで `-c25 -m50` FlameGraph を再取得し `thread_create_core` の変化を実測する（`/biryani-benchmark` 領域）
+
+---
+
 ## [2026-06-13] internals | SNT_KEEP_SECONDS 無効の根本原因判明 — nt クリーンアップ未実装
 
 - `nt_start` タイムアウト終了時に `nt` 構造体・`nt_context`・`altstack` が一切解放されないことを確認
