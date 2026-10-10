@@ -1,9 +1,10 @@
 ---
 date: 2026-05-17
+updated: 2026-10-11
 tags: [internals]
 ---
 
-# Ractor 全体像（ruby/ruby v4.0.2）
+# Ractor 全体像（ruby/ruby master 17aeb89200）
 
 ruby/ruby の Ractor が何者で、どう動くかを一枚に整理する。
 biryani の実装を読む前提知識として、また発見を ruby/ruby の文脈に位置づけるための参照ページ。
@@ -28,11 +29,11 @@ Ruby のスレッドモデルは版によって変化してきた:
 | Ruby 3.3〜 | M:N | M Ruby スレッドを N OS スレッドで処理 |
 
 Ruby 3.3 から導入された **M:N スケジューラ**（goroutine スケジューラに着想）では:
-- **非 main Ractor**: M:N スケジューラがデフォルトで有効（無効化不可）
-- **main Ractor**: デフォルトは 1:1。`RUBY_MN_THREADS=1` で M:N を有効化
-- N（OS スレッド数）は `RUBY_MAX_CPU` で指定、デフォルトは **8**
+- **非 main Ractor**: M:N スケジューラがデフォルトで有効（`17aeb89200` では `RUBY_MN_THREADS=-1` で無効化できる）
+- **main Ractor**: デフォルトは 1:1。`RUBY_MN_THREADS=1` で M:N を有効化（`=2` で main スレッド自身も M:N に乗る。`ce6f200972` で追加）
+- N（OS スレッド数）は `RUBY_MAX_CPU` で指定。デフォルトは論理 CPU 数（`e98f95b4fd` 以前は **8** 固定）
 
-（ソース: `doc/NEWS/NEWS-3.3.0.md:457`, `thread_pthread.c:1160`）
+（ソース: `doc/NEWS/NEWS-3.3.0.md:457`, [`thread_sched.c:1823-1836`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1823-L1836)）
 
 ### SNT（Shared Native Thread）
 
@@ -86,10 +87,11 @@ SNT が GRQ を取り出す（deq）タイミング:
 - 現在実行中の Ractor が IO ブロックや `Ractor.recv` で停止したとき
 - 実行完了で次の仕事を探すとき
 
-`SNT_KEEP_SECONDS` との関係: GRQ が空＝「全 Ractor が IO 待ちか終了済み」の状態。
-この状態が続くと SNT がアイドルになり、`SNT_KEEP_SECONDS` 秒後にタイムアウト終了する。
+SNT の retire（`17aeb89200`）: GRQ が空＝「全 Ractor が IO 待ちか終了済み」の状態。
+起こされても GRQ が空だったことが `SNT_IDLE_RETIRE`（デフォルト 3）回を超えて続くと、その SNT は自分で終了する（最後の 1 本は残す）。
+`e98f95b4fd` 時点にあった `SNT_KEEP_SECONDS`（デフォルト 0 で無効）は `1da2eea37c` で削除され、この仕組みに置き換わった。
 
-ソース: [`ractor_sched_deq`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1332)（`thread_pthread.c:1332`）、[`rb_ractor_sched_enq`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1290)（`thread_pthread.c:1290`）
+ソース: [`ractor_sched_deq`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1364)（`thread_sched.c:1364`）、[`ractor_sched_enq`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1302)（`thread_sched.c:1302`）
 
 ### dedicated SNT（専有ネイティブスレッド）
 
@@ -109,7 +111,7 @@ flowchart LR
     end
 ```
 
-dedicated SNT になると [`native_thread_dedicated_inc`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1061)（`thread_pthread.c:1061`）が呼ばれ、
+dedicated SNT になると [`native_thread_dedicated_inc`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1858)（`thread_sched.c:1858`）が呼ばれ、
 スレッドは `rb_native_cond_wait(&th->nt->cond.readyq, ...)` で眠る。
 I/O 完了時に `rb_native_cond_signal(&th->nt->cond.readyq)` で起こされる。
 
@@ -138,7 +140,7 @@ stateDiagram-v2
     terminated --> [*]
 ```
 
-ソース: [`ractor_status_set`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor.c#L164)（`ractor.c:164`）、状態名は [`ractor_status_str`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor.c#L152)（`ractor.c:152`）
+ソース: [`ractor_status_set`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor.c#L181)（`ractor.c:181`）、状態名は [`ractor_status_str`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor.c#L169)（`ractor.c:169`）
 
 - **created**: メモリ確保済み、まだ実行開始前
 - **running**: Ruby コードを実行中
@@ -147,7 +149,7 @@ stateDiagram-v2
 
 ## 内部構造体
 
-### `rb_ractor_t`（[`ractor_core.h:68`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_core.h#L68)）
+### `rb_ractor_t`（[`ractor_core.h:98`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_core.h#L98)）
 
 Ractor の本体。`rb_ractor_struct` の typedef。
 
@@ -164,6 +166,8 @@ struct rb_ractor_struct {
         struct rb_thread_sched sched;
         rb_execution_context_t *running_ec;
         rb_thread_t *main;
+        rb_thread_t *dying_th;      // M:N 終了処理中のスレッドを mark し続けるため
+        bool terminating;
     } threads;
 
     VALUE name;
@@ -180,31 +184,27 @@ struct rb_ractor_struct {
 };
 ```
 
-### `rb_ractor_pub`（[`vm_core.h:2328`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/vm_core.h#L2349)）
+### `rb_ractor_pub`（[`vm_core.h:2439`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/vm_core.h#L2439)）
 
 Ruby レベルから見える公開フィールド。
 
 ```c
 struct rb_ractor_pub {
     VALUE        self;              // Ruby オブジェクトとしての自身
-    uint32_t     id;                // Ractor#id の値
+    rb_serial_t  id;                // Ractor#id の値（acc5cd03d9 で 64 bit 化）
     rb_hook_list_t hooks;           // TracePoint フック
-    st_table    *targeted_hooks;
+    st_table     targeted_hooks;    // 17aeb89200 ではポインタではなく埋め込み
     unsigned int targeted_hooks_cnt;
 };
 ```
 
-### `rb_ractor_sync`（[`ractor_core.h:15`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_core.h#L15)）
+### `rb_ractor_sync`（[`ractor_core.h:33`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_core.h#L33)）
 
 スレッド間で共有されるすべての状態。ractor lock（`sync.lock`）で保護される。
 
 ```c
 struct rb_ractor_sync {
     rb_nativethread_lock_t  lock;           // pthread_mutex：Ractor 操作全般を保護
-
-#ifndef RUBY_THREAD_PTHREAD_H
-    rb_nativethread_cond_t  wakeup_cond;    // Win32 のみ。pthread 実装は rb_nogvl を使う
-#endif
 
     struct ractor_queue    *recv_queue;     // 全Portへの着信を受け取る共通キュー
     struct ccan_list_head   waiters;        // recv 待機中のスレッド（ractor_waiter のリスト）
@@ -213,31 +213,37 @@ struct rb_ractor_sync {
     struct st_table        *ports;          // port_id → ractor_queue のハッシュ
     size_t                  next_port_id;
 
+    struct ccan_list_head   off_queue_baskets; // どのキューにも載っていない送信中・受信中の basket
+
     struct ccan_list_head   monitors;       // join 待ちの監視 Ractor
     rb_ractor_t            *successor;      // 終了時に値を渡す先
 };
 ```
 
-### `ractor_basket`（[`ractor_sync.c:184`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L184)）
+### `ractor_basket`（[`ractor_sync.c:250`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_sync.c#L250)）
 
 キューを流れるメッセージ1件。
 
 ```c
 struct ractor_basket {
-    enum ractor_basket_type type;   // none / ref / copy / move
     VALUE     sender;               // 送信元
     st_data_t port_id;              // 宛先ポートID
 
-    struct {
+    union {
         VALUE v;
-        bool  exception;
+        struct rb_ractor_courier *courier;  // copy/move はヒープ外の courier にシリアライズ
     } p;                            // ペイロード
 
     struct ccan_list_node node;     // キューへの侵入リストノード
+
+    enum ractor_basket_type type : 8;  // none / ref / copy / move
+    bool has_courier;
+    bool exception;
 };
+// b5d839dbca で 80 → 48 bytes に縮小
 ```
 
-### `ractor_queue`（[`ractor_sync.c:232`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_sync.c#L232)）
+### `ractor_queue`（[`ractor_sync.c:358`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_sync.c#L358)）
 
 メッセージの連結リストキュー。`recv_queue`（共通着信）と per-port キューの両方に使われる。
 
@@ -245,10 +251,11 @@ struct ractor_basket {
 struct ractor_queue {
     struct ccan_list_head set;      // ractor_basket の侵入リスト
     bool closed;
+    bool alive;                     // Ractor::Port がまだ到達可能か
 };
 ```
 
-### `ractor_waiter`（[`ractor_core.h:118`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_core.h#L118)）
+### `ractor_waiter`（[`ractor_core.h:207`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_core.h#L207)）
 
 `ractor_wait` 中のスレッドを表す。`sync.waiters` リストに積まれる。
 
@@ -257,6 +264,8 @@ struct ractor_waiter {
     enum ractor_wakeup_status wakeup_status;  // wakeup_none / wakeup_by_send / wakeup_by_interrupt
     rb_thread_t            *th;
     struct ccan_list_node   node;
+    rb_atomic_t             event_serial;
+    const rb_hrtime_t      *end;        // 受信タイムアウトの絶対時刻（なければ NULL）
 };
 ```
 
@@ -266,7 +275,7 @@ struct ractor_waiter {
 rb_ractor_t
 ├── pub (rb_ractor_pub)
 │   ├── self (VALUE)       ← Ruby オブジェクト
-│   └── id (uint32_t)      ← Ractor#id
+│   └── id (rb_serial_t)   ← Ractor#id
 ├── sync (rb_ractor_sync)
 │   ├── lock               ← pthread_mutex
 │   ├── recv_queue ────────→ ractor_queue
@@ -287,7 +296,7 @@ Ractor 間で渡せるオブジェクトは3種類に分類される:
 
 | 方法 | 動作 | 用途 |
 |------|------|------|
-| **copy**（デフォルト） | Marshal で深コピー | 通常のオブジェクト |
+| **copy**（デフォルト） | 深コピー（`17aeb89200` ではヒープ外の courier にシリアライズして受信側で復元。Marshal へのフォールバックは `dea2cdac07` で削除） | 通常のオブジェクト |
 | **move**（`move: true`） | 所有権を移す。元 Ractor はアクセス不可 | 大きなオブジェクトのゼロコピー転送 |
 | **shareable** | 参照をそのまま渡す | 読み取り専用データ |
 
@@ -316,8 +325,8 @@ Ractor-shareable なオブジェクト（参照共有可能）:
 | 生成コスト | Ruby スレッド生成 + SNT への登録（M:N 下では OS スレッド生成より軽い） |
 | wall time | biryani 実測で `Ractor.new` 0.0%（I/O 待機に比べて無視できる） |
 | CPU 時間 | perf 実測で ~5-10%（`thread_create_core` + `nt_alloc_stack`） ※要因は調査中 |
-| 同期 | Linux: 1 send = `rb_native_cond_signal`（per-SNT）。Win32 のみ `pthread_cond_broadcast` |
-| OS スレッド数 | M:N モード、N = 物理 CPU 数（提出済み PR で変更、旧デフォルト 8）+ ブロッキング操作用追加スレッド |
+| 同期 | 1 send = `rb_native_cond_signal`（per-SNT）。`90e729c9bc` でスケジューラが POSIX と Windows で共通化され、Win32 専用の `pthread_cond_broadcast` パスはなくなった |
+| OS スレッド数 | M:N モード、N = 論理 CPU 数（`e98f95b4fd` で変更、旧デフォルト 8）+ ブロッキング操作用追加スレッド。余った SNT は retire する（`43793ca21a`） |
 
 ## 関連ページ
 

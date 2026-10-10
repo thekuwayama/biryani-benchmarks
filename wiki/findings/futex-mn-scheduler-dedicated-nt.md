@@ -5,6 +5,9 @@ tags: [finding, internals]
 
 # FlameGraph の futex ~11% の真因：M:N スケジューラの dedicated SNT
 
+> **2026-10-11 注記**: 本文の `thread_pthread.c:NNN` は commit `e98f95b4fd` 時点の行番号。`17aeb89200` では、該当関数は `thread_sched.c` にある（`rb_ractor_sched_wait`: [:1418](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1418)、`rb_ractor_sched_wakeup`: [:1491](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1491)、`thread_sched_to_waiting_common`: [:983](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L983)）。
+> 計測値は Ruby 4.0.2 のもの。
+
 FlameGraph で futex 系が CPU の ~11% を占める理由を特定した。
 Ractor send（`pthread_cond_broadcast`）ではなく、**ブロッキング I/O による dedicated SNT の `pthread_cond_signal` / `pthread_cond_wait`** が出所。
 

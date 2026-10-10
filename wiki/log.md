@@ -4,6 +4,19 @@
 
 ---
 
+## [2026-10-11] maintenance | raw/ruby-src を master 17aeb89200 に更新・上流変更の取り込み
+
+- `raw/ruby-src` を `e98f95b4fd`（2026-06-06）→ master `17aeb89200`（2026-10-10、約 3,600 コミット）に更新
+- **スケジューラが作り直された**（`90e729c9bc`）: `thread_pthread.c` のスケジューラ本体が `thread_sched.c`（POSIX/Windows 共通）へ移り、`thread_pthread_mn.c` は `thread_sched_mn.c` に改名された
+- **wiki の候補が上流で解決**: SNT retire（`43793ca21a`）、retire 時の nt 解放（`dce74ebf04`）、`SNT_KEEP_SECONDS` 削除（`1da2eea37c`）→ `contributions/snt-keep-seconds-enable` をクローズ。上流は wiki 案になかった `sigaltstack` の無効化まで入れており、`SNT_KEEP_SECONDS` がそのままでは期限の再計算で機能しない点も指摘していた
+- `timer_th.waiting` の O(n) 挿入はタイマーホイール化で解決（`168eada435`）。M:N の I/O 待ちは `EPOLLONESHOT` 化（`ce15950f56`）
+- per-Ractor GC が入った（`5dd63db8ea`）→ Q8「使い捨て Ractor の回収は STW を誘発するか」を追加
+- `internals/upstream-scheduler-changes-2026.md` を新設。`source-reading-guide.md` を新しいファイル構成で書き直し
+- 現行ページの permalink は `17aeb89200` に移行した。クローズ済み・解決済みなど歴史的な記述のページは `e98f95b4fd` のまま残し、冒頭に注記を入れた（CLAUDE.md に例外規約を追加）
+- 次のステップ: master `17aeb89200` を Lima VM でビルドし、`-c25 -m50` の h2load + FlameGraph を取り直す。4.0.2 と比べて `thread_create_core` ~10% / futex ~11% / GC ~8% がどう変わったかを確認する（`/biryani-benchmark`）
+
+---
+
 ## [2026-08-01] question | Q7 追加 — biryani ノンブロッキング化の実測は未着手
 
 - Q2（ノンブロッキング化で epoll パスに乗れるか）は分岐ロジックからの推論であり、実測は未実施だったため Q7 として切り出した

@@ -5,6 +5,9 @@ tags: [internals]
 
 # M:N スケジューラの SNT ライフサイクルと補充ロジック
 
+> **2026-10-11 注記**: 本文中の `thread_pthread.c:NNN` / `thread_pthread_mn.c:NNN` は commit `e98f95b4fd` 時点の行番号。`17aeb89200` ではスケジューラが `thread_sched.c` / `thread_sched_mn.c` に移った。
+> また、SNT は余れば retire するようになった（`43793ca21a`）。新しい位置の対応表は [upstream-scheduler-changes-2026.md](upstream-scheduler-changes-2026.md) を参照。
+
 `thread_pthread_mn.c` の SNT 管理コードを精査した。
 FlameGraph の `thread_create_core` ~10% の真因を特定する（Q5 の回答）。
 

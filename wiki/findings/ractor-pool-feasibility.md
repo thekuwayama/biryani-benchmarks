@@ -23,7 +23,7 @@ tags: [finding]
 created → running/blocking → terminated
 ```
 
-状態は一方向で、終了した Ractor を再起動する API（`reset` など）は存在しない（[`ractor_core.h:61-66`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/ractor_core.h#L61-L66)）。
+状態は一方向で、終了した Ractor を再起動する API（`reset` など）は存在しない（[`ractor_core.h:83-88`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_core.h#L83-L88)）。
 
 ## ループ型 Ractor プール（技術的に可能）
 
@@ -59,7 +59,7 @@ end
 
 ## idle Ractor と SNT の関係
 
-`Ractor.recv` でブロックした Ractor は [`rb_ractor_sched_wait`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread.c#L1391)（`thread_pthread.c:1391`）経由で
+`Ractor.recv` でブロックした Ractor は [`rb_ractor_sched_wait`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1418)（`thread_sched.c:1418`）経由で
 M:N スケジューラに入り、SNT（Shared Native Thread）を解放して休眠する。
 
 → プールした idle Ractors は SNT を占有しない。Ruby Ractor オブジェクトとして `vm->ractor.cnt` に
@@ -67,7 +67,7 @@ M:N スケジューラに入り、SNT（Shared Native Thread）を解放して�
 
 ## thread_create_core ~10% への効果が限定的な理由
 
-SNT 補充（[`native_thread_check_and_create_shared`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread_mn.c#L408)、`thread_pthread_mn.c:408`）の発火条件：
+SNT 補充（[`native_thread_check_and_create_shared`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched_mn.c#L932)、`thread_sched_mn.c:932`）の発火条件：
 
 ```c
 if (snt_cnt < schedulable_ractor_cnt &&
@@ -76,7 +76,7 @@ if (snt_cnt < schedulable_ractor_cnt &&
 }
 ```
 
-**snt_cnt が減る原因**（thread_pthread.c:1821-1836）：
+**snt_cnt が減る原因**（[`thread_sched.c:1858-1881`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1858-L1881)）：
 
 ```c
 native_thread_dedicated_inc():
@@ -86,6 +86,9 @@ native_thread_dedicated_inc():
 
 `IO#read` がブロッキングするたびに SNT が dedicated 化 → `snt_cnt` が `max_cpu` を下回る →
 次の補充チェック（Ractor.new または timer）で pthread_create 発生。
+
+`17aeb89200` では、dedicated から戻るときにプールが満杯ならその nt は retire する（[`native_thread_dedicated_dec`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1884-L1910)、`43793ca21a`）。
+このため、余った SNT がプールにたまることはなくなった。ただし dedicated 化をきっかけに補充が走る構造は変わっていない。
 
 **Stream Ractor プールの影響**：
 - Ractor.new の呼び出しが減る → `native_thread_create_shared` の呼び出しが減る

@@ -5,6 +5,9 @@ tags: [internals]
 
 # `Ractor.select` の C 実装
 
+> **2026-10-11 注記**: 本文の行番号は commit `e98f95b4fd` 時点。`17aeb89200` の [`ractor_selector__wait`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_sync.c#L1849-L1874)（`ractor_sync.c:1849`）は、タイムアウト用の `end` 引数を取るようになった（`d32793fe8e`）。
+> wakeup のたびに全ポートを走査する構造は変わっていない。詳細: [upstream-scheduler-changes-2026.md](upstream-scheduler-changes-2026.md)
+
 `Ractor.select(*ports)` がどのようにブロック・ウェイクアップするかを解説する。
 
 ## 呼び出しチェーン

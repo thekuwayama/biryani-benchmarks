@@ -5,6 +5,12 @@ tags: [internals]
 
 # Ractor 同期：wakeup メカニズムの実装（ractor_sync.c）
 
+> **2026-10-11 注記**: 本文の行番号は commit `e98f95b4fd` 時点。`17aeb89200` での変化は 2 点ある。
+> - `90e729c9bc` で Win32 専用の broadcast パスがなくなった
+> - `4133daa130` で `ractor_wakeup_all` が `ractor_wakeup_all_locked`（[`ractor_sync.c:1318`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_sync.c#L1318-L1343)）とロックを取るラッパーに分かれ、send 経路はロックを持ったまま waiter を起こすようになった
+>
+> pthread 版 `rb_ractor_sched_wakeup` は [`thread_sched.c:1491`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1491) にある。詳細: [upstream-scheduler-changes-2026.md](upstream-scheduler-changes-2026.md)
+
 `ractor_sync.c` の wakeup パスを精査した。`pthread_cond_broadcast` の使われ方に
 コード品質と最適化の観点から注目すべき点が3つある。
 

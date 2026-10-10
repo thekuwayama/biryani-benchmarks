@@ -6,6 +6,9 @@ status: クローズ（誤分析）
 
 # `rb_ractor_sched_wakeup`: broadcast → signal への変更
 
+> **2026-10-11 注記**: 本ページは commit `e98f95b4fd` 時点の記述（リンクも同コミット）。`90e729c9bc`（2026-08-28）でスケジューラが POSIX と Windows で共通化され、`ractor_sync.c` の `#else // win32` ブロックはなくなった。
+> pthread 版の `rb_ractor_sched_wakeup` は [`thread_sched.c:1491`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1491) にある。
+
 ## 問題・提案
 
 `ractor_sync.c` の `rb_ractor_sched_wakeup` は `pthread_cond_broadcast` を使っているが、
