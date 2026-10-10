@@ -10,10 +10,14 @@ N    = 10_000
 C    = 25
 M    = 50
 T    = 10
+OUT  = ENV['RPERF_OUT'] || '/biryani-benchmarks/raw/rperf_c25_m50_wall.json.gz'
 
-socket = TCPServer.open(PORT)
+# Ruby master では IO を Ractor にコピーで渡せないため、TCPServer は Ractor 内で開く。
+# BIRYANI_IO_MOVE_SHIM=1 で biryani の IO 受け渡しを move に差し替える（load/ractor_io_move_shim.rb）。
+require_relative 'ractor_io_move_shim' if ENV['BIRYANI_IO_MOVE_SHIM'] == '1'
 
-Ractor.new(socket) do |s|
+Ractor.new do
+  s = TCPServer.open(PORT)
   server = Biryani::Server.new(
     Ractor.shareable_proc do |_, res|
       res.status = 200
@@ -23,9 +27,17 @@ Ractor.new(socket) do |s|
   server.run(s)
 end
 
-Rperf.start(output: '/biryani-benchmarks/raw/rperf_c25_m50_wall.json.gz', mode: :wall) do
+# サーバー Ractor が listen を始めるまで待つ
+begin
+  TCPSocket.new('localhost', PORT).close
+rescue Errno::ECONNREFUSED
+  sleep 0.1
+  retry
+end
+
+Rperf.start(output: OUT, mode: :wall) do
   system("h2load -n#{N} -c#{C} -m#{M} -t#{T} http://localhost:#{PORT}")
 end
 
-puts "rperf wall profile saved to raw/rperf_c25_m50_wall.json.gz"
-puts "report: rperf report --top raw/rperf_c25_m50_wall.json.gz"
+puts "rperf wall profile saved to #{OUT}"
+puts "report: rperf report --top #{OUT}"
