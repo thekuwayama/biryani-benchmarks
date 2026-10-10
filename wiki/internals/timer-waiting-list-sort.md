@@ -5,6 +5,12 @@ tags: [internals, finding]
 
 # `timer_th.waiting` のソート挿入 — O(n) の TODO
 
+> **2026-10-11 注記: 上流で解決済み**。本ページは commit `e98f95b4fd` 時点の記述（リンクも同コミット）。
+> `timer_th.waiting` の O(n) ソート挿入は、ko1 の `168eada435`（2026-08-14）で階層タイマーホイール（4 段 × 64 スロット、O(1) 挿入）に置き換わった。
+> 同コミットのメッセージには「8000 接続がタイムアウト付きで待つと、線形スキャンで CPU の半分を使う」という計測が載っている。
+> 本ページの「biryani では効かない」という結論（biryani の I/O はタイムアウトなしで O(1) パスを通る）はそのまま正しい。
+> 詳細: [internals/upstream-scheduler-changes-2026](upstream-scheduler-changes-2026.md)
+
 ## サマリー
 
 `timer_thread_register_waiting`（[`thread_pthread_mn.c:840`](https://github.com/ruby/ruby/blob/e98f95b4fd830c5e89941702e7b216e3212ac778/thread_pthread_mn.c#L840)）は、

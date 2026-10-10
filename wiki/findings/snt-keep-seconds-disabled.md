@@ -5,6 +5,9 @@ tags: [finding, internals]
 
 # `SNT_KEEP_SECONDS = 0` — SNT プールが実行時に縮小しない
 
+> **2026-10-11 注記**: 本ページは commit `e98f95b4fd` 時点の記述（リンクも同コミット）。`SNT_KEEP_SECONDS` は上流の `1da2eea37c`（2026-08-13）で削除され、`43793ca21a` の `SNT_IDLE_RETIRE` による retire に置き換わった。
+> 詳細: [internals/upstream-scheduler-changes-2026](../internals/upstream-scheduler-changes-2026.md)
+
 ## サマリー
 
 M:N スケジューラの SNT（Shared Native Thread）プールには「アイドル SNT をタイムアウトで

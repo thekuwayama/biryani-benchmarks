@@ -1,11 +1,18 @@
 ---
 date: 2026-05-17
-updated: 2026-05-24
+updated: 2026-10-11
 type: issue
 status: 調査中
 ---
 
 # M:N スケジューラ：SNT 補充コストの削減
+
+> **2026-10-11 追記（submodule を `17aeb89200` に更新）**: 上流で ko1 が SNT プールの縮小を実装した。
+> `43793ca21a`（2026-08-12）で「起こされても GRQ が空」が `SNT_IDLE_RETIRE`（3）回を超えて続いた SNT が自分で終了するようになり、
+> `native_thread_dedicated_dec` もプールが `max_cpu` に達していれば dedicated から戻る nt を retire させるようになった。
+> また `1da2eea37c`（2026-08-13）で `SNT_KEEP_SECONDS` は削除された。したがって下記の**案 A' は上流で別の方式によって実現済み**であり、
+> 案 A（ヒステリシス）も「過剰になった SNT をどう減らすか」の部分は上流の retire 規則と重なる。
+> 残る問いは「`IO#read` → dedicated 化 → 補充（`pthread_create`）」のサイクル自体が `17aeb89200` でどれだけ残っているかで、これは実測が必要。
 
 ## 問題・提案
 
@@ -45,7 +52,7 @@ SNT が 1 本でも dedicated になると即座に補充が走る設計。
 
 ## 改善アイデア
 
-### 案 A': `SNT_KEEP_SECONDS` を有効化（2026-05-24 追加）
+### ~~案 A': `SNT_KEEP_SECONDS` を有効化（2026-05-24 追加）~~ → 上流で別方式により実現済み（`43793ca21a`）
 
 `SNT_KEEP_SECONDS` は M:N 初回実装（be1bbd5b7, ko1, 2023-04-10）からすでに実装済みだが、
 デフォルト 0 で無効化されている。非ゼロ値を設定すると、アイドル SNT が N 秒後に自動終了する。
@@ -109,7 +116,7 @@ dedicated SNT 自体が発生しなくなり `thread_create_core` と futex の�
 ## 次のステップ
 
 1. ~~`RUBY_MAX_CPU` を変えてベンチマークし、`thread_create_core` の比率の変化を測定~~ → 対応済み
-2. `SNT_KEEP_SECONDS` を有効化（例: 5）してベンチマークし、スループットと `thread_create_core` 比率の変化を確認（**次の実験候補**）
+2. ~~`SNT_KEEP_SECONDS` を有効化（例: 5）してベンチマーク~~ → `SNT_KEEP_SECONDS` は上流で削除された。代わりに `17aeb89200` をビルドして `-c25 -m50` の FlameGraph を取り直し、`thread_create_core` 比率が上流の retire 規則でどう変わったかを確認する（**次の実験候補**）
 3. `MINIMUM_SNT` を 1 以上にした場合の効果を測定
 4. データが揃ったら ruby-dev に Issue を提出する
 

@@ -5,6 +5,10 @@ tags: [internals, finding]
 
 # Ractor-local GC の現状（Ruby 4.0.2）
 
+> **2026-10-11 注記: 内容が古い**。本ページは Ruby 4.0.2 時点の記述。`17aeb89200` までに per-Ractor GC が入った（`5dd63db8ea` NEWS、2026-08-04）。
+> 各 Ractor は自分のヒープを自分のスレッドで回収する。全 Ractor を止める GC は、明示的な `GC.start`、shareable オブジェクトの増加、終了した Ractor のヒープの回収のときだけ走る。
+> 詳細: [upstream-scheduler-changes-2026.md](upstream-scheduler-changes-2026.md)、[questions/README の Q8](../questions/README.md)
+
 RubyKaigi 2025 で ko1 が発表した "Toward Ractor Local GC" をベースに、
 Ruby 4.0.2 ソースコードで実際の実装状況を確認した記録。
 

@@ -1,6 +1,6 @@
 ---
 date: 2026-05-17
-updated: 2026-05-27
+updated: 2026-10-11
 tags: [contribution]
 ---
 
@@ -26,7 +26,7 @@ tags: [contribution]
 
 | 候補 | 状態 |
 |------|------|
-| SNT 補充オーバーヘッド削減（`SNT_KEEP_SECONDS` 有効化・ヒステリシス案） | 調査中（次の実験: `SNT_KEEP_SECONDS = 5` でコンパイル）|
+| SNT 補充オーバーヘッド削減（ヒステリシス案） | 調査中（縮小側は上流で実装済み。次の実験: master `17aeb89200` で再計測）|
 
 詳細: [contributions/snt-replenishment-overhead](snt-replenishment-overhead.md)
 
@@ -35,5 +35,6 @@ tags: [contribution]
 | 候補 | 理由 |
 |------|------|
 | broadcast → signal | Linux では `pthread_cond_broadcast` は走らない（Win32 のみ） |
+| SNT タイムアウト時の nt 解放 + `SNT_KEEP_SECONDS` 有効化 | 上流で ko1 が実装済み（`dce74ebf04` nt 解放、`43793ca21a` SNT retire、`1da2eea37c` `SNT_KEEP_SECONDS` 削除） |
 
-詳細: [contributions/cond-signal-vs-broadcast](cond-signal-vs-broadcast.md)
+詳細: [contributions/cond-signal-vs-broadcast](cond-signal-vs-broadcast.md), [contributions/snt-keep-seconds-enable](snt-keep-seconds-enable.md)

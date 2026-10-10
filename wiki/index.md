@@ -33,7 +33,7 @@
 - [findings/ractor-select-wait-breakdown](findings/ractor-select-wait-breakdown.md) — **Q1 解答**: Ractor.select 33.5% はブロッキング I/O との並行待機（構造的必然）
 - [findings/rperf-concurrent-vs-parallel](findings/rperf-concurrent-vs-parallel.md) — rperf の計測モデル：各 Ractor 独立の並行計測であり、実時間（並列）の重複を含む
 - [findings/ractor-pool-feasibility](findings/ractor-pool-feasibility.md) — **Q3 解答**: Ractor プールは実装可能。ただし thread_create_core ~10% への効果は限定的（原因は IO#read）
-- [findings/snt-keep-seconds-disabled](findings/snt-keep-seconds-disabled.md) — `SNT_KEEP_SECONDS = 0` により SNT プールが実行時に縮小しない（Q6 調査中）
+- [findings/snt-keep-seconds-disabled](findings/snt-keep-seconds-disabled.md) — `SNT_KEEP_SECONDS = 0` により SNT プールが実行時に縮小しない（`e98f95b4fd` 時点。上流で削除済み、retire に置き換え）
 
 ---
 
@@ -45,11 +45,12 @@
 - [internals/ractor-sync-wakeup](internals/ractor-sync-wakeup.md) — wakeup メカニズム精査（Win32 vs pthread 分岐・M:N スケジューラの実際のパス）
 - [internals/ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md) — **Q5 解答**: SNT ライフサイクルと補充ロジック（thread_create_core ~10% の真因）
 - [internals/ractor-select-implementation](internals/ractor-select-implementation.md) — `Ractor.select` の C 実装（ポーリングループ・Linux/Win32 分岐・M:N スケジューラとの接続）
-- [internals/mn-snt-pool-growth-shrink](internals/mn-snt-pool-growth-shrink.md) — `max_cpu`（成長上限）と `SNT_KEEP_SECONDS`（縮小速度）の役割と時系列シナリオ（Mermaid 図付き）
-- [internals/ractor-local-gc-status](internals/ractor-local-gc-status.md) — Ractor-local GC の現状（Ruby 4.0.2）：ko1 RubyKaigi 2025 講演との対比、インフラは布石段階、本体は未実装
+- [internals/mn-snt-pool-growth-shrink](internals/mn-snt-pool-growth-shrink.md) — `max_cpu`（成長上限）と `SNT_KEEP_SECONDS`（縮小速度）の役割と時系列シナリオ（`e98f95b4fd` 時点）
+- [internals/ractor-local-gc-status](internals/ractor-local-gc-status.md) — Ractor-local GC の現状（Ruby 4.0.2）：ko1 RubyKaigi 2025 講演との対比、インフラは布石段階、本体は未実装（**古い**: master では per-Ractor GC が入った）
 - [source-reading-guide](source-reading-guide.md) — ソースコード読み方ガイド（推奨読書順・関数・行番号）
-- [internals/timer-waiting-list-sort](internals/timer-waiting-list-sort.md) — `timer_th.waiting` の O(n) ソート挿入 — biryani とは無関係（I/O はタイムアウトなし → O(1) パスを通る）
+- [internals/timer-waiting-list-sort](internals/timer-waiting-list-sort.md) — `timer_th.waiting` の O(n) ソート挿入 — biryani とは無関係（I/O はタイムアウトなし → O(1) パスを通る）。上流でタイマーホイール化され解決済み（`168eada435`）
 - [internals/nonblocking-io-mn-scheduler-path](internals/nonblocking-io-mn-scheduler-path.md) — **Q2 解答**: biryani をノンブロッキング I/O 化すれば epoll ベースの M:N スケジューラ経路に乗り、dedicated SNT を回避できる（実測未実施）
+- [internals/upstream-scheduler-changes-2026](internals/upstream-scheduler-changes-2026.md) — `e98f95b4fd` → `17aeb89200` の上流変更まとめ: スケジューラの `thread_sched.c` 化、SNT retire、タイマーホイール、`EPOLLONESHOT`、per-Ractor GC
 
 ---
 
@@ -62,8 +63,8 @@
 ## コントリビュート候補
 
 - [contributions/default-max-cpu-cpu-count](contributions/default-max-cpu-cpu-count.md) — **★ マージ済み（e98f95b4fd）**: `default_max_cpu=8` → 物理 CPU 数に変更（I/O +3.1%・CPU +5.5%）
-- [contributions/snt-replenishment-overhead](contributions/snt-replenishment-overhead.md) — **調査中**: SNT 補充の頻繁な pthread_create を削減（CPU ~10%）。SNT_KEEP_SECONDS 有効化が候補案
-- [contributions/snt-keep-seconds-enable](contributions/snt-keep-seconds-enable.md) — **調査中**: SNT タイムアウト終了時の nt クリーンアップ修正 + SNT_KEEP_SECONDS 有効化（nt 未解放 TODO あり）
+- [contributions/snt-replenishment-overhead](contributions/snt-replenishment-overhead.md) — **調査中**: SNT 補充の頻繁な pthread_create を削減（CPU ~10%）。縮小側は上流で実装済み、master で再計測待ち
+- [contributions/snt-keep-seconds-enable](contributions/snt-keep-seconds-enable.md) — **クローズ**: SNT タイムアウト終了時の nt クリーンアップ修正 + SNT_KEEP_SECONDS 有効化 → 上流で実装済み（`dce74ebf04` / `43793ca21a`）
 
 ### クローズ済み
 

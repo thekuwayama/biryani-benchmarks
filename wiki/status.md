@@ -1,5 +1,6 @@
 ---
 date: 2026-05-23
+updated: 2026-10-11
 tags: [status]
 ---
 
@@ -86,6 +87,7 @@ Ruby 3.3+ の非 main Ractor は M:N スケジューラを使用。M Ruby スレ
 - デフォルト SNT 上限: `default_max_cpu` = 物理 CPU 数（マージ済み（e98f95b4fd、2026-06-06）。Ruby 4.0.5 には未含、次リリース以降に入る。変更前は固定値 8）
 - `IO#read` → dedicated SNT 取得 → `snt_cnt--` → `native_thread_check_and_create_shared` で補充
 - ブロック中の Ractor は SNT を解放して休眠（M:N の恩恵）
+- **上流 master（`17aeb89200`、2026-10-10）での変化**: スケジューラは `thread_sched.c` / `thread_sched_mn.c` に移った。余った SNT は retire するようになり（`43793ca21a`、`SNT_KEEP_SECONDS` は削除）、タイムアウト付き待ちはタイマーホイール化され、I/O 待ちは `EPOLLONESHOT` 化された。per-Ractor GC も入った。上の CPU 内訳は Ruby 4.0.2 での計測なので、master での再計測が必要 → [internals/upstream-scheduler-changes-2026](internals/upstream-scheduler-changes-2026.md)
 
 詳細: [internals/ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md)
 
@@ -107,11 +109,13 @@ rperf は並行計測（重複あり）なので複数 Ractor の数値を合算
 | Q | 内容 | 状態 |
 |---|------|------|
 | Q1 | Ractor.select 33.5% の内訳 | **解決**（IO#read との並行待機） |
-| Q2 | IO#read のノンブロッキング化の可否 | 未解決 |
+| Q2 | IO#read のノンブロッキング化の可否 | **解決**（EAGAIN 時のみ epoll パス。実測は Q7） |
 | Q3 | Ractor プールの効果 | **解決**（thread_create_core への効果は限定的） |
 | Q4 | pthread_cond_broadcast の最適化 | **クローズ**（Linux では走らない） |
 | Q5 | FlameGraph の thread_create_core の解釈 | **解決**（SNT 補充コスト） |
-| Q6 | dedicated SNT のコストを下げられるか | 未解決 |
+| Q6 | dedicated SNT のコストを下げられるか | 一部は上流で解決（SNT retire）。master で再計測待ち |
+| Q7 | biryani ノンブロッキング化の実測 | 未着手 |
+| Q8 | per-Ractor GC 下で、使い捨て Ractor の回収は STW を誘発するか | 未着手 |
 
 詳細: [questions/README](questions/README.md)
 
@@ -122,7 +126,8 @@ rperf は並行計測（重複あり）なので複数 Ractor の数値を合算
 | 候補 | 状態 | 根拠 |
 |------|------|------|
 | `default_max_cpu` を物理 CPU 数に | **マージ済み（e98f95b4fd）** | RUBY_MAX_CPU=4 で +3%（I/O）・+5.5%（CPU）、ko1 の TODO コメント |
-| SNT 補充オーバーヘッド削減 | 候補 | thread_create_core ~10%、改善案 3 つ |
+| SNT 補充オーバーヘッド削減 | 調査中（master で再計測待ち） | thread_create_core ~10%。縮小側は上流で実装済み |
+| SNT タイムアウト時の nt 解放 + `SNT_KEEP_SECONDS` 有効化 | **クローズ**（上流で実装済み: `dce74ebf04` / `43793ca21a`） | — |
 | broadcast → signal | **クローズ** | Linux では broadcast は走らない |
 
 詳細: [contributions/](contributions/)

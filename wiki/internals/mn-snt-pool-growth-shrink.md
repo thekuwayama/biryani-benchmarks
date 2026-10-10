@@ -5,6 +5,10 @@ tags: [internals]
 
 # M:N スケジューラ：SNT プールの成長と縮小
 
+> **2026-10-11 注記**: 本ページは commit `e98f95b4fd` 時点の記述。縮小側の仕組み（`SNT_KEEP_SECONDS`）は上流で削除され、`SNT_IDLE_RETIRE` による retire（`43793ca21a`）と、retire 時の nt 解放（`dce74ebf04`）に置き換わった。
+> 「上限はあるが縮小がない」という非対称は `17aeb89200` では解消されている。
+> 詳細: [internals/upstream-scheduler-changes-2026](upstream-scheduler-changes-2026.md)
+
 `max_cpu` と `SNT_KEEP_SECONDS` の 2 パラメータがそれぞれ SNT プールの
 「成長の上限」と「縮小の速度」を担い、セットで機能する設計になっている。
 現在は `max_cpu` のみが設定されており（マージ済み（e98f95b4fd）で物理コア数に変更）、

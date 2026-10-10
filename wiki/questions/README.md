@@ -50,8 +50,8 @@ C 実装では `ractor_selector__wait`（ractor_sync.c:1420）が毎 wakeup で�
 **回答**（2026-08-01）:
 
 biryani は `socket.accept` で得た `IO` をブロッキングモードのまま使用している（`raw/biryani/lib/biryani/server.rb`）。
-`rb_thread_io_blocking_call`（thread.c:1956）の分岐ロジックにより、M:N スケジューラの
-epoll 待ちパス（`thread_sched_wait_events`、thread_pthread_mn.c:556）に入るのは
+`rb_thread_io_blocking_call`（thread.c:1956、`17aeb89200` では thread.c:2203）の分岐ロジックにより、M:N スケジューラの
+epoll 待ちパス（`thread_sched_wait_events`、thread_pthread_mn.c:556、`17aeb89200` では thread_sched_mn.c:536）に入るのは
 `read(2)` が `EAGAIN`/`EWOULDBLOCK` を返したときだけ。ブロッキングソケットでは `read()` は
 決して `EAGAIN` を返さず常にカーネル内でブロックするため、毎回 `native_thread_dedicated_inc`
 （dedicated SNT 取得）を経由し、epoll パスは一度も使われない。
@@ -87,7 +87,16 @@ M:N スケジューラ経由で `rb_native_cond_signal`（すでに signal）を
 
 → [contributions/cond-signal-vs-broadcast](../contributions/cond-signal-vs-broadcast.md) はクローズ。
 
-### Q6: dedicated SNT の生成コストを下げられるか（→ 調査中）
+### Q6: dedicated SNT の生成コストを下げられるか（→ 一部は上流で解決、再計測待ち）
+
+**2026-10-11 追記**: `17aeb89200` に更新したところ、ko1 が上流で SNT プールの縮小を実装していた。
+`43793ca21a` で `SNT_IDLE_RETIRE` による retire が入り、`dedicated_dec` 時にプールが満杯なら retire するようになった。
+`dce74ebf04` で retire 時の nt 解放が入り、`1da2eea37c` で `SNT_KEEP_SECONDS` は削除された。
+下の「次の実験」（`SNT_KEEP_SECONDS = 5`）はもう成り立たない。代わりに `17aeb89200` をビルドし、`-c25 -m50` の FlameGraph で
+`thread_create_core` ~10% / futex ~11% がどう変わったかを測るのが次の一手になる。
+詳細: [internals/upstream-scheduler-changes-2026](../internals/upstream-scheduler-changes-2026.md)
+
+以下は 2026-05-24 時点の記述（`e98f95b4fd` 基準）。
 
 FlameGraph の `thread_create_core` ~10% と futex ~11% が合算 ~21% を占める。
 
@@ -145,6 +154,27 @@ IO::WaitReadable/WaitWritable` + リトライに書き換える必要がある�
 **次のステップ**: biryani の実験ブランチで上記の書き換えを行い、`-c25 -m50` で
 h2load ベンチマーク＋ FlameGraph を再取得して比較する（`/biryani-benchmark` 領域）。
 
+**2026-10-11 追記**: `17aeb89200` には `ce15950f56`（`EPOLLONESHOT` で待ちごとの `epoll_ctl` を半減）が入っている。
+ノンブロッキング化した場合の上積みは、4.0.x より master のほうが大きいと予想される。
+一方でブロッキング側も retire 規則で変わっているので、比較は 2×2 で行うとよい（ブロッキング／ノンブロッキング × 4.0.x／`17aeb89200`）。
+
 詳細: [internals/nonblocking-io-mn-scheduler-path](../internals/nonblocking-io-mn-scheduler-path.md)
 
 関連: [internals/ractor-mn-snt-lifecycle](../internals/ractor-mn-snt-lifecycle.md), [internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md)
+
+### Q8: per-Ractor GC 下で、使い捨て Ractor の「死んだヒープの回収」は stop-the-world を誘発するか（→ 未着手）
+
+`17aeb89200` までに per-Ractor GC が入った（`5dd63db8ea` NEWS、2026-08-04）。各 Ractor は自分のヒープを自分のスレッドで回収し、
+他の Ractor は止めない。ただし NEWS によると、全 Ractor を止める GC は次の場合には走る:
+明示的な `GC.start`、shareable オブジェクトの増加、**終了した Ractor のヒープの回収**（reclaiming dead Ractors' heaps）。
+
+biryani はストリームごとに Stream Ractor を生成して使い捨てる（`-c25 -m50` で最大 1,300 Ractor が入れ替わり続ける）。
+**終了した Ractor のヒープ回収が頻繁に stop-the-world を起こすなら、per-Ractor GC の恩恵を打ち消すかもしれない**。
+
+**確認したいこと**:
+- 終了した Ractor の objspace がいつ、どのロックの下で回収（absorb / merge）されるか（`e768a87a17` で「終了するスレッド自身が post-mortem で自分の objspace を回収する」ようになった点を含む）
+- `GC.stat` の Ractor ごとのカウンタ（`ee4013b90f`）で、biryani 実行中のグローバル GC の回数を数える
+- FlameGraph の GC ~8%（4.0.2）が `17aeb89200` でどう変わるか
+- 変わらない／悪化するなら、Stream Ractor のプール化（[findings/ractor-pool-feasibility](../findings/ractor-pool-feasibility.md)）の価値が上がる
+
+関連: [internals/upstream-scheduler-changes-2026](../internals/upstream-scheduler-changes-2026.md), [internals/ractor-local-gc-status](../internals/ractor-local-gc-status.md)
