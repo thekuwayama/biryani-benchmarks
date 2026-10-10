@@ -37,8 +37,14 @@ Connection Ractor（接続ごと）
 | -c25 -m50（最適） | **1,300** | **7,695** |
 | -c25 -m50 RUBY_MAX_CPU=4 | 1,300 | **8,456**（+10%） |
 | -c25 -m50 Ruby 4.0.5 unset（=8 固定） | 1,300 | **7,464**（4.0.2 比 +4.3%、PR 未含） |
+| -c25 -m50 Ruby 4.0.5 + biryani 0.0.15 unset | 1,300 | **8,238**（biryani 0.0.12 比 +10%） |
+| -c25 -m50 **master `17aeb89200`** + biryani 0.0.15（IO move シム） | 1,300 | **約 3,400**（4.0.5 の約 43%、最大 RSS 2.2 GB） |
 
 4コア環境での最適 Ractor 数は 1,000〜1,500 程度。オーバーサブスクリプションで急落する。
+
+**master では per-Ractor GC のせいで大きく後退した**: Ractor 1 つごとに objspace の生成・retire GC・absorb が走るため、Ractor を使い捨てる biryani はリクエストごとにそのコストを払う。
+さらに、master では IO を Ractor にコピーで渡せないので、biryani 0.0.15 はそのままでは動かない。
+→ [scenarios/ruby-master-vs-405](scenarios/ruby-master-vs-405.md)、[findings/per-ractor-gc-ractor-churn-cost](findings/per-ractor-gc-ractor-churn-cost.md)、[findings/ractor-io-copy-regression](findings/ractor-io-copy-regression.md)
 
 ---
 
@@ -115,7 +121,7 @@ rperf は並行計測（重複あり）なので複数 Ractor の数値を合算
 | Q5 | FlameGraph の thread_create_core の解釈 | **解決**（SNT 補充コスト） |
 | Q6 | dedicated SNT のコストを下げられるか | 一部は上流で解決（SNT retire）。master で再計測待ち |
 | Q7 | biryani ノンブロッキング化の実測 | 未着手 |
-| Q8 | per-Ractor GC 下で、使い捨て Ractor の回収は STW を誘発するか | 未着手 |
+| Q8 | per-Ractor GC 下で、使い捨て Ractor の回収は STW を誘発するか | 一部解決（STW より Ractor ごとの固定コストが問題） |
 
 詳細: [questions/README](questions/README.md)
 
@@ -128,6 +134,8 @@ rperf は並行計測（重複あり）なので複数 Ractor の数値を合算
 | `default_max_cpu` を物理 CPU 数に | **マージ済み（e98f95b4fd）** | RUBY_MAX_CPU=4 で +3%（I/O）・+5.5%（CPU）、ko1 の TODO コメント |
 | SNT 補充オーバーヘッド削減 | 調査中（master で再計測待ち） | thread_create_core ~10%。縮小側は上流で実装済み |
 | SNT タイムアウト時の nt 解放 + `SNT_KEEP_SECONDS` 有効化 | **クローズ**（上流で実装済み: `dce74ebf04` / `43793ca21a`） | — |
+| `objspace_absorb` の free page 連結を O(N²) → O(src) に | **候補（PR）** | absorb の 99.6% がこの行。実験ビルドで Ractor 逐次生成 2.7 倍、biryani の終了処理 6 s → 0.5 s |
+| master で IO を Ractor にコピーで渡せない | **候補（issue）** | 4.0.x では `#clone` で動いた。NEWS に記載なし |
 | broadcast → signal | **クローズ** | Linux では broadcast は走らない |
 
 詳細: [contributions/](contributions/)

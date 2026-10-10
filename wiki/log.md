@@ -4,6 +4,20 @@
 
 ---
 
+## [2026-10-11] benchmark | Ruby 4.0.5 vs master 17aeb89200（biryani 0.0.15）
+
+- master `17aeb89200` を Lima VM でビルド（4.0.5 と同じ configure）。biryani 0.0.15 で `-c25 -m50` を比較した
+- **master では IO を Ractor にコピーで渡せない**（courier 化で `#clone` 経路がなくなった）。biryani 0.0.15 はそのままでは 1 リクエストも処理できないので、IO を move で渡すシム（`load/ractor_io_move_shim.rb`）を両方の Ruby に入れて比較した → `findings/ractor-io-copy-regression.md`
+- **スループット**: 4.0.5 約 8,000 req/s に対し、master 約 3,400 req/s（約 43%）。最大 RSS は 106 MB → 2.2 GB。perf の 512 MB バッファと合わせて VM が OOM になった
+- **原因**: per-Ractor GC で、Ractor ごとに objspace 生成（ページ約 3 枚）・retire GC（full GC）・absorb が走る（uprobe で 10,000 リクエスト ≈ 各 10,000 回）
+- **`objspace_absorb` の O(N²)**: free page チェーンの末尾探索（`gc/default/default.c:10069`）が absorb のサンプルの 99.6%。O(src) に直した実験ビルドで、Ractor 逐次生成が 2.7 倍速く、biryani の終了処理が 6 s → 0.5 s になった（スループットは変わらない）→ `contributions/objspace-absorb-free-pages-tail.md`
+- 4.0.5 では biryani 0.0.12 → 0.0.15 で +10%（7,464 → 8,238 req/s）
+- Q8 を一部解決に更新。rperf は今回取っていない
+- ベンチマーク関連: Gemfile.lock を biryani 0.0.15 に更新し、`load/bench_compare_rubies.rb` を追加した。`load/server_c25_m50.rb` と `load/profile_rperf.rb` は master でも動くよう、TCPServer を Ractor 内で開く形にした
+- 次のステップ: retire GC と heap 初期化の Ractor ごとのコストを減らせるか調べる（`RUBY_GC_RACTOR_HEAP_INIT_BYTES`、retire GC を省ける条件）。あわせて、Stream Ractor のプール化で回避できるかを biryani 側で試す
+
+---
+
 ## [2026-10-11] maintenance | raw/biryani を v0.0.15 に更新
 
 - `raw/biryani` を v0.0.12（`8753e5a`）→ v0.0.15（`7535a4b`、2026-09-30）に更新

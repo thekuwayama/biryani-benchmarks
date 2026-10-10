@@ -162,7 +162,19 @@ h2load ベンチマーク＋ FlameGraph を再取得して比較する（`/birya
 
 関連: [internals/ractor-mn-snt-lifecycle](../internals/ractor-mn-snt-lifecycle.md), [internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md)
 
-### Q8: per-Ractor GC 下で、使い捨て Ractor の「死んだヒープの回収」は stop-the-world を誘発するか（→ 未着手）
+### Q8: per-Ractor GC 下で、使い捨て Ractor の「死んだヒープの回収」は stop-the-world を誘発するか（→ 一部解決）
+
+**2026-10-11 計測結果**: STW の頻度より、**Ractor 1 つごとの固定コスト**が問題だった。master `17aeb89200` の biryani は 4.0.5 の約 43% のスループットで、最大 RSS は約 20 倍だった。
+
+- Ractor ごとに objspace を生成し（ページ約 3 枚）、終了時には自分の objspace に full GC（retire GC）を 1 回かけ、その objspace を別の Ractor に absorb する。10,000 リクエストで、それぞれ約 10,000 回
+- global GC（STW）は 1 回のマイクロベンチで 0〜2 回しか走らない。そのため終了した Ractor のメモリが 8,000〜10,000 個分（約 550 MB）たまるまで返らない
+- `objspace_absorb` に O(N²) の末尾探索があった（→ [contributions/objspace-absorb-free-pages-tail](../contributions/objspace-absorb-free-pages-tail.md)）
+
+詳細: [findings/per-ractor-gc-ractor-churn-cost](../findings/per-ractor-gc-ractor-churn-cost.md)、[scenarios/ruby-master-vs-405](../scenarios/ruby-master-vs-405.md)
+
+残る問い: biryani で main Ractor がブロックしている間、orphan objspace の吸収（main 上の postponed job）が止まり、メモリがたまり続けるのか（仮説、未検証）。
+
+以下は 2026-10-11 の計測前の記述。
 
 `17aeb89200` までに per-Ractor GC が入った（`5dd63db8ea` NEWS、2026-08-04）。各 Ractor は自分のヒープを自分のスレッドで回収し、
 他の Ractor は止めない。ただし NEWS によると、全 Ractor を止める GC は次の場合には走る:

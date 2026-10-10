@@ -22,6 +22,15 @@ tags: [contribution]
 
 詳細: [contributions/default-max-cpu-cpu-count](default-max-cpu-cpu-count.md)
 
+## 候補
+
+| 候補 | 状態 |
+|------|------|
+| `objspace_absorb` の free page 連結を O(N²) → O(src) に | 候補（PR）。実験ビルドで効果確認済み |
+| master で IO を Ractor にコピーで渡せない | 候補（issue） |
+
+詳細: [contributions/objspace-absorb-free-pages-tail](objspace-absorb-free-pages-tail.md), [contributions/ractor-io-copy-regression](ractor-io-copy-regression.md)
+
 ## 調査中
 
 | 候補 | 状態 |

@@ -97,6 +97,10 @@ thread.c                           thread.c
 biryani はストリームごとに Ractor を使い捨てるので、最後の「終了した Ractor のヒープの回収」が頻繁に起きる可能性がある。
 → [ractor-local-gc-status](ractor-local-gc-status.md) は Ruby 4.0.2 時点の記述なので古い。新しい疑問 Q8 として切り出した。
 
+**2026-10-11 計測**: biryani では、STW の頻度より Ractor ごとの固定コスト（objspace 生成・retire GC・absorb）が効いた。スループットは 4.0.5 の約 43% だった
+（→ [findings/per-ractor-gc-ractor-churn-cost](../findings/per-ractor-gc-ractor-churn-cost.md)）。
+また courier 化に伴い、IO を Ractor にコピーで渡せなくなった（→ [findings/ractor-io-copy-regression](../findings/ractor-io-copy-regression.md)）。
+
 ### スケジューラ全般
 
 | コミット | 内容 |
