@@ -99,7 +99,15 @@ biryani ではリクエスト処理中の absorb は少なく、ほとんどが�
 - biryani（`-n10000`）では最大 RSS が 2.2 GB になり、perf のバッファ（512 MB）を足すと 4 GB の VM で OOM になった
 - 仮説（未検証）: biryani では main Ractor が `system("h2load")` でブロックしているため、main で実行される disowned zombie 吸収の postponed job が h2load の終了まで進まない。その間、zombie の objspace が溜まり続ける
 
+### 4. プール化で回避できる
+
+biryani の Stream Ractor をワーカーのプールに差し替えると（`load/ractor_pool_shim.rb`）、master での objspace 生成・retire GC・absorb の回数は 10,000 回強から約 60 回になった。
+スループットは 2,959 → 20,754 req/s で 4.0.5（プールありで 18,641 req/s）を上回り、最大 RSS は 2.2 GB → 55 MB になった。
+per-Ractor GC のコストは、Ractor を作っては捨てる使い方のときに表に出る（[scenarios/stream-ractor-pool](../scenarios/stream-ractor-pool.md)）。
+
 ## 関連ページ
+
+- [scenarios/stream-ractor-pool](../scenarios/stream-ractor-pool.md) — プール化で回避した計測
 
 - [scenarios/ruby-master-vs-405](../scenarios/ruby-master-vs-405.md)
 - [contributions/objspace-absorb-free-pages-tail](../contributions/objspace-absorb-free-pages-tail.md)

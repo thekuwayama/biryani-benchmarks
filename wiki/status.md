@@ -41,11 +41,14 @@ biryani v0.0.14 以降の構成（`raw/biryani` は v0.0.15）。v0.0.12 まで�
 | -c25 -m50 Ruby 4.0.5 unset（=8 固定） | 1,300 | **7,464**（4.0.2 比 +4.3%、PR 未含） |
 | -c25 -m50 Ruby 4.0.5 + biryani 0.0.15 unset | 1,300 | **8,238**（biryani 0.0.12 比 +10%） |
 | -c25 -m50 **master `17aeb89200`** + biryani 0.0.15（IO move シム） | 1,300 | **約 3,400**（4.0.5 の約 43%、最大 RSS 2.2 GB） |
+| -c25 -m50 4.0.5 + biryani 0.0.15 + **Stream プール 4**（シム） | — | **18,641**（プールなしの約 2.4 倍） |
+| -c25 -m50 **master** + biryani 0.0.15 + **Stream プール 4**（シム） | — | **20,754**（プールなしの約 7 倍、4.0.5 を上回る。最大 RSS 55 MB） |
 
 4コア環境での最適 Ractor 数は 1,000〜1,500 程度。オーバーサブスクリプションで急落する。
 
 **master `17aeb89200` では、biryani 0.0.15 はそのままでは動かない**: IO を Ractor にコピーで渡せなくなったため（`d549b394dc`）、1 リクエストも処理できない。
 **IO を move で渡すシムで動かすと、4.0.5 の約 43% に落ちる**: per-Ractor GC で Ractor 1 つごとに objspace の生成・retire GC・absorb が走り、Ractor を使い捨てる biryani はリクエストごとにそのコストを払う。
+**Stream Ractor をプール化すると逆転する**: master 20,754 req/s、4.0.5 18,641 req/s。4.0.5 でも約 2.4 倍になるので、Ractor の使い捨てそのものがどちらの Ruby でも主要なコストだった → [scenarios/stream-ractor-pool](scenarios/stream-ractor-pool.md)
 → [scenarios/ruby-master-vs-405](scenarios/ruby-master-vs-405.md)、[findings/per-ractor-gc-ractor-churn-cost](findings/per-ractor-gc-ractor-churn-cost.md)、[findings/ractor-io-copy-regression](findings/ractor-io-copy-regression.md)
 
 ---
@@ -126,12 +129,13 @@ rperf は並行計測（重複あり）なので複数 Ractor の数値を合算
 |---|------|------|
 | Q1 | Ractor.select 33.5% の内訳 | **解決**（IO#read との並行待機） |
 | Q2 | IO#read のノンブロッキング化の可否 | **解決**（EAGAIN 時のみ epoll パス。実測は Q7） |
-| Q3 | Ractor プールの効果 | **解決**（thread_create_core への効果は限定的） |
+| Q3 | Ractor プールの効果 | **解決**（2026-10-11 の実測で、4.0.5 で約 2.4 倍・master で約 7 倍。以前の「限定的」という予想は外れた） |
 | Q4 | pthread_cond_broadcast の最適化 | **クローズ**（Linux では走らない） |
 | Q5 | FlameGraph の thread_create_core の解釈 | **解決**（SNT 補充コスト） |
 | Q6 | dedicated SNT のコストを下げられるか | 一部は上流で解決（SNT retire）。master で再計測待ち |
 | Q7 | biryani ノンブロッキング化の実測 | 未着手 |
-| Q8 | per-Ractor GC 下で、使い捨て Ractor の回収は STW を誘発するか | 一部解決（STW より Ractor ごとの固定コストが問題） |
+| Q8 | per-Ractor GC 下で、使い捨て Ractor の回収は STW を誘発するか | 一部解決（STW より Ractor ごとの固定コストが問題。プール化で回避できる） |
+| Q9 | 4.0.5 でも Ractor の使い捨てはなぜ重いのか | 未着手 |
 
 詳細: [questions/README](questions/README.md)
 

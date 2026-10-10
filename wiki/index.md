@@ -2,7 +2,7 @@
 
 **ゴール**: ruby/ruby の Ractor にパフォーマンス関連のコントリビュートをする。
 
-最終更新: 2026-10-11（Ruby master 17aeb89200 と biryani 0.0.15 で再計測。per-Ractor GC のコストと IO コピー不可を記録）
+最終更新: 2026-10-11（Stream Ractor のプール化を計測。master が 4.0.5 を上回った）
 
 ---
 
@@ -22,6 +22,7 @@
 - [scenarios/sweep-c-parameter](scenarios/sweep-c-parameter.md) — `-c` スイープ（10〜100、m=50 固定）: ピーク c=25、7,695 req/s（全体最高）
 - [scenarios/sweep-ruby-max-cpu](scenarios/sweep-ruby-max-cpu.md) — **RUBY_MAX_CPU スイープ（I/O バウンド）**: 全3回実施。Ruby 4.0.5 unset は 4.0.2 比 +4.3%（e98f95b4fd は 4.0.5 に未含なので PR の効果ではない）
 - [scenarios/ruby-master-vs-405](scenarios/ruby-master-vs-405.md) — **Ruby 4.0.5 vs master 17aeb89200**（biryani 0.0.15）: master は約 3,400 req/s（4.0.5 の約 43%）、最大 RSS 2.2 GB（約 20 倍）
+- [scenarios/stream-ractor-pool](scenarios/stream-ractor-pool.md) — **Stream Ractor のプール化**（シム）: 4.0.5 18,641 req/s（約 2.4 倍）、master 20,754 req/s（約 7 倍、4.0.5 を上回る）。最大 RSS 55 MB
 - [scenarios/sweep-ruby-max-cpu-cpu-bound](scenarios/sweep-ruby-max-cpu-cpu-bound.md) — **RUBY_MAX_CPU スイープ（CPU バウンド）**: ピーク cpu=4、1,317 req/s。デフォルト8より+5.5%
 
 ---
@@ -35,7 +36,7 @@
 - [findings/futex-mn-scheduler-dedicated-nt](findings/futex-mn-scheduler-dedicated-nt.md) — futex ~11% の真因：ブロッキング I/O → dedicated SNT の cond_signal/wait
 - [findings/ractor-select-wait-breakdown](findings/ractor-select-wait-breakdown.md) — **Q1 解答**: Ractor.select 33.5% はブロッキング I/O との並行待機（構造的必然）
 - [findings/rperf-concurrent-vs-parallel](findings/rperf-concurrent-vs-parallel.md) — rperf の計測モデル：各 Ractor 独立の並行計測であり、実時間（並列）の重複を含む
-- [findings/ractor-pool-feasibility](findings/ractor-pool-feasibility.md) — **Q3 解答**: Ractor プールは実装可能。ただし thread_create_core ~10% への効果は限定的（原因は IO#read）
+- [findings/ractor-pool-feasibility](findings/ractor-pool-feasibility.md) — **Q3 解答**: Ractor プールは実装可能。当初は効果が限定的と予想したが、2026-10-11 の実測で 4.0.5 でも約 2.4 倍になり訂正
 - [findings/per-ractor-gc-ractor-churn-cost](findings/per-ractor-gc-ractor-churn-cost.md) — **Q8**: master の per-Ractor GC では Ractor ごとに objspace 生成・retire GC・absorb が走る。`objspace_absorb` に O(N²) の末尾探索
 - [findings/ractor-io-copy-regression](findings/ractor-io-copy-regression.md) — master では IO を Ractor にコピーで渡せない（4.0.x は `#clone` で動いた）。biryani 0.0.15 が動かない
 - [findings/snt-keep-seconds-disabled](findings/snt-keep-seconds-disabled.md) — `SNT_KEEP_SECONDS = 0` により SNT プールが実行時に縮小しない（`e98f95b4fd` 時点。上流で削除済み、retire に置き換え）
@@ -61,7 +62,7 @@
 
 ## 未解決の疑問
 
-- [questions/README](questions/README.md) — Q1〜Q8（Q1・Q2・Q3・Q4・Q5 解決済み。Q6: 一部は上流で解決（SNT retire）、master で再計測待ち。Q7: 未着手 — biryani ノンブロッキング化の実測。Q8: 一部解決 — per-Ractor GC の Ractor ごとの固定コスト）
+- [questions/README](questions/README.md) — Q1〜Q9（Q1・Q2・Q3・Q4・Q5 解決済み。Q6: 一部は上流で解決（SNT retire）、master で再計測待ち。Q7: 未着手 — biryani ノンブロッキング化の実測。Q8: 一部解決 — per-Ractor GC の Ractor ごとの固定コスト、プール化で回避できる。Q9: 未着手 — 4.0.5 でも Ractor の使い捨てが重い理由）
 
 ---
 

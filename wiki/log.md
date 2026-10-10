@@ -4,6 +4,16 @@
 
 ---
 
+## [2026-10-11] benchmark | Stream Ractor のプール化（4.0.5 / master）
+
+- `load/ractor_pool_shim.rb` を追加。biryani の Stream Ractor を、使い回すワーカーのプールに実行時に差し替える（`raw/biryani` は変更しない）
+- プール 4 で、4.0.5 は 7,735 → 18,641 req/s（約 2.4 倍）、master は 2,959 → 20,754 req/s（約 7 倍）。**master が 4.0.5 を上回った**。`-n50000` でも master 21,762 vs 4.0.5 20,660 req/s で、master は sd が 4 ms と小さい
+- master の objspace 生成・retire GC・absorb は 10,000 回強 → 約 60 回、最大 RSS は 2.2 GB → 55 MB
+- Q3 の「プールの効果は限定的」という予想は外れた（Ractor の生成・終了に伴う GC と futex を見落としていた）。Q9（4.0.5 でも Ractor の使い捨てが重い理由）を追加
+- 次のステップ: Q9。4.0.5 で Ractor の生成・終了が GC（10 個ごとに 1 回）と futex を誘発する原因をソースで追う。ruby/ruby 側で減らせれば、使い捨て型の Ractor 全般が速くなる
+
+---
+
 ## [2026-10-11] review | wiki 整合性チェック
 
 - lychee: 相対リンクと GitHub 以外の外部リンクはエラー 0。GitHub の permalink 95 件は、ファイルの存在と行番号の範囲をローカルで確認した（GitHub へのアクセスはレート制限で 503 になるため）

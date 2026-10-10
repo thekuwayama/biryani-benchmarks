@@ -69,6 +69,8 @@ epoll 待ちパス（`thread_sched_wait_events`、thread_pthread_mn.c:556、`17a
 
 ### Q3: Ractor プールは実装可能か、効果があるか（→ 解決）
 
+**2026-10-11 実測で訂正**: 下の回答の「効果は限定的」は外れた。Stream Ractor のプール化でスループットは 4.0.5 で約 2.4 倍、master で約 7 倍になった（[scenarios/stream-ractor-pool](../scenarios/stream-ractor-pool.md)）。
+
 **回答**（2026-05-23）:
 
 - **実装は可能**: ループ型 Ractor（`loop { Ractor.recv; ... }`）で実現できる。idle 時は M:N スケジューラが SNT を解放するため、プール Ractor は SNT を占有しない。
@@ -176,6 +178,8 @@ h2load ベンチマーク＋ FlameGraph を再取得して比較する（`/birya
 
 残る問い: biryani で main Ractor がブロックしている間、orphan objspace の吸収（main 上の postponed job）が止まり、メモリがたまり続けるのか（仮説、未検証）。
 
+**2026-10-11 追記**: Stream Ractor をプール化すると、この固定コストはほぼ消え、master が 4.0.5 を上回った（[scenarios/stream-ractor-pool](../scenarios/stream-ractor-pool.md)）。
+
 以下は 2026-10-11 の計測前の記述。
 
 `17aeb89200` までに per-Ractor GC が入った（`5dd63db8ea` NEWS、2026-08-04）。各 Ractor は自分のヒープを自分のスレッドで回収し、
@@ -192,3 +196,20 @@ biryani はストリームごとに Stream Ractor を生成して使い捨てる
 - 変わらない／悪化するなら、Stream Ractor のプール化（[findings/ractor-pool-feasibility](../findings/ractor-pool-feasibility.md)）の価値が上がる
 
 関連: [internals/upstream-scheduler-changes-2026](../internals/upstream-scheduler-changes-2026.md), [internals/ractor-local-gc-status](../internals/ractor-local-gc-status.md)
+
+### Q9: 4.0.5 でも、Ractor の使い捨てはなぜこれほど重いのか（→ 未着手）
+
+Stream Ractor をプール化すると、**4.0.5 でもスループットが約 2.4 倍**になった（[scenarios/stream-ractor-pool](../scenarios/stream-ractor-pool.md)）。
+減ったのは futex（17.2% → 6.5%）と GC（19.3% → 10.6%）で、`thread_create_core` は 3.0% にすぎなかった。
+
+手がかり:
+- マイクロベンチ（Ractor を 1 つ作って `value` で回収、を繰り返す）では、4.0.5 は **Ractor 10 個ごとに GC が 1 回**走っていた（2,000 個で `GC.stat[:count]` が 203。4.0.5 はヒープが 1 つなので、すべて全体の GC）。Ractor の生成・終了が GC を誘発している可能性がある（[findings/per-ractor-gc-ractor-churn-cost](../findings/per-ractor-gc-ractor-churn-cost.md) の表）
+- futex は、Ractor（スレッド）の開始・終了時の同期（スケジューラのロック、`Ractor#value` / 終了待ち）から来ている可能性がある
+
+**確認したいこと**:
+- 4.0.5 で、何が GC を起こしているか（`GC.latest_gc_info(:major_by)` / `:gc_by`、malloc の増加量か、スレッドスタックか）
+- futex の呼び出し元（Ractor の生成・終了のどの段階か）
+
+これが ruby/ruby 側で減らせるなら、使い捨て型の Ractor の利用（biryani の現在の設計）全般が速くなる。
+
+関連: [findings/ractor-pool-feasibility](../findings/ractor-pool-feasibility.md)

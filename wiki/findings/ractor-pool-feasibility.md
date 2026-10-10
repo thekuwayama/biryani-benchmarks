@@ -1,9 +1,16 @@
 ---
 date: 2026-05-23
+updated: 2026-10-11
 tags: [finding]
 ---
 
 # Ractor プールの実現可能性と効果（Q3 解決）
+
+> **2026-10-11 実測で訂正**: 下の結論表の「効果は限定的」という予想は外れた。
+> biryani 0.0.15 の Stream Ractor をシムでプール化して測ると、スループットは **4.0.5 で約 2.4 倍（7,735 → 18,641 req/s）、master `17aeb89200` で約 7 倍（2,959 → 20,754 req/s）** になった。
+> 4.0.5 でも、プールにより futex 17.2% → 6.5%、GC 19.3% → 10.6% と減り、Ruby のコードを実行している割合（`vm_exec_core`）は 11.6% → 20.7% と増えた。
+> この予想は `thread_create_core` の原因（IO#read）だけを見ていて、Ractor の生成・終了に伴う GC と futex のコストを見落としていた。
+> 詳細: [scenarios/stream-ractor-pool](../scenarios/stream-ractor-pool.md)
 
 ## 結論
 
