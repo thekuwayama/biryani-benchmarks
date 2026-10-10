@@ -30,10 +30,10 @@ issue として確認したいこと:
 | [`ractor_sync.c`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_sync.c#L1114-L1137) | 1114-1137 | `ractor_prepare_payload`: courier に載らなければ `can not copy` |
 | `ractor.c`（`e98f95b4fd`） | — | 旧実装の `copy_enter` → `ractor_obj_clone`（IO は `#clone` で fd を dup） |
 
-関連コミット: `cd2ea9df6c`、`68447b1559`（ヒープ上スナップショット経路の廃止。ここで IO が運べなくなったと推定）、`dea2cdac07`（Marshal フォールバック削除）
+関連コミット: `d549b394dc`（2026-08-01、per-Ractor GC 本体。コピーが `#clone` から native copier + Marshal に変わり、ここで IO が運べなくなった）、`cd2ea9df6c` / `68447b1559`（courier 化）、`dea2cdac07`（Marshal フォールバック削除）
 
 ## 次のステップ
 
-1. 変化を起こしたコミットを特定する（`cd2ea9df6c` / `68447b1559` の前後をビルドして確認）
+1. 変化を起こしたコミットをビルドして確かめる（コード上は `d549b394dc` で壊れている。その直前と直後で `Ractor.new(io)` を試す）
 2. bugs.ruby-lang.org と [Feature #22227](https://redmine.ruby-lang.org/issues/22227) で既出かを確認する（2026-10-11 時点では、#22227 の議論に IO のコピーへの言及はなかった）
 3. 意図的な変更なら、biryani 側で IO を move で渡すよう直す（biryani はユーザーのリポジトリ）
