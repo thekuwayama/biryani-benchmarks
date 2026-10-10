@@ -30,6 +30,8 @@ biryani の高 I/O 頻度によりこのサイクルが連続する。
 
 ### Q1: `Ractor.select` の 33.5% は何を待っているのか（→ 解決）
 
+（2026-10-11 注記: biryani v0.0.12 での計測。v0.0.14 以降の biryani は `Ractor.select` を使わず、単一ポートの `Port#receive` で待つ）
+
 **回答**（2026-05-23）:
 
 **主因**: recv_loop の `IO#read` がブロックしている間、select_loop も `Ractor.select` で並行待機している時間。

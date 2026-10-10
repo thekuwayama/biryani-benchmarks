@@ -19,11 +19,13 @@ h2load クライアント
     │ TCP/HTTP2
     ▼
 Connection Ractor（接続ごと）
-    ├─ recv_loop Ractor — IO#read でフレームを読み込み @sock に送信
-    └─ select_loop — Ractor.select(@sock, @streams_ctx.tx) でディスパッチ
+    ├─ recv_loop Ractor — IO#read でフレームを読み込み、共有ポート @port に [:frame, obj] を送信
+    └─ select_loop — @port.receive でタグ（:frame / :response / :eof）ごとにディスパッチ
             ↓ リクエスト完成時
-        Stream Ractor（ストリームごと）— proc.call → tx.send(res)
+        Stream Ractor（ストリームごと）— proc.call → @port に [:response, res, stream_id] を送信
 ```
+
+biryani v0.0.14 以降の構成（`raw/biryani` は v0.0.15）。v0.0.12 までは `Ractor.select(@sock, @streams_ctx.tx)` で 2 つのポートを待っていた。
 
 詳細: [internals/biryani-ractor-architecture](internals/biryani-ractor-architecture.md)
 
@@ -42,13 +44,15 @@ Connection Ractor（接続ごと）
 
 4コア環境での最適 Ractor 数は 1,000〜1,500 程度。オーバーサブスクリプションで急落する。
 
-**master では per-Ractor GC のせいで大きく後退した**: Ractor 1 つごとに objspace の生成・retire GC・absorb が走るため、Ractor を使い捨てる biryani はリクエストごとにそのコストを払う。
-さらに、master では IO を Ractor にコピーで渡せないので、biryani 0.0.15 はそのままでは動かない。
+**master `17aeb89200` では、biryani 0.0.15 はそのままでは動かない**: IO を Ractor にコピーで渡せなくなったため（`d549b394dc`）、1 リクエストも処理できない。
+**IO を move で渡すシムで動かすと、4.0.5 の約 43% に落ちる**: per-Ractor GC で Ractor 1 つごとに objspace の生成・retire GC・absorb が走り、Ractor を使い捨てる biryani はリクエストごとにそのコストを払う。
 → [scenarios/ruby-master-vs-405](scenarios/ruby-master-vs-405.md)、[findings/per-ractor-gc-ractor-churn-cost](findings/per-ractor-gc-ractor-churn-cost.md)、[findings/ractor-io-copy-regression](findings/ractor-io-copy-regression.md)
 
 ---
 
 ## Wall time の内訳（rperf、-c25 -m50）
+
+Ruby 4.0.2 + biryani 0.0.12 での計測（`Ractor.select` は v0.0.12 の構成。v0.0.15 では単一ポートの `Port#receive` に変わったので、取り直しが必要）。
 
 ```
 IO#read          47.9%  ← recv_loop がソケット読み込み待ち
@@ -70,6 +74,8 @@ Ractor.new        0.0%  ← Ractor 生成は wall time でほぼゼロ
 
 ## CPU の内訳（perf、-c25 -m50）
 
+Ruby 4.0.2 + biryani 0.0.12（`-F 99`）:
+
 ```
 thread_create_core  ~10%  ← SNT 補充コスト（IO#read が引き金）
 futex 同期          ~11%  ← ブロッキング I/O による dedicated SNT の cond_signal/wait
@@ -77,6 +83,10 @@ GC                   ~8%
 Ruby VM 実行        ~14%
 unknown             ~24%
 ```
+
+Ruby 4.0.5 + biryani 0.0.15（IO move シム、`-F 499`、ruby プロセス内の inclusive）: futex 17.2%、GC 19.3%、`vm_exec_core` 11.6%、`thread_create_core` 3.0%。
+サンプリング周波数も変わっているので、上と単純には比べられない（[scenarios/ruby-master-vs-405](scenarios/ruby-master-vs-405.md)）。
+master `17aeb89200` では GC が 72.6%（absorb 修正後も 38.7%）で、律速が GC に移った。
 
 `thread_create_core ~10%` は Ractor.new の直接コストではなく、`IO#read` が dedicated SNT を
 取得するたびに `snt_cnt` が減少し、SNT 補充（`pthread_create`）が走る間接コスト。
@@ -90,7 +100,7 @@ unknown             ~24%
 
 Ruby 3.3+ の非 main Ractor は M:N スケジューラを使用。M Ruby スレッドを N OS スレッド（SNT）で処理。
 
-- デフォルト SNT 上限: `default_max_cpu` = 物理 CPU 数（マージ済み（e98f95b4fd、2026-06-06）。Ruby 4.0.5 には未含、次リリース以降に入る。変更前は固定値 8）
+- デフォルト SNT 上限: `default_max_cpu` = CPU 数（`sysconf(_SC_NPROCESSORS_ONLN)`、オンラインの論理 CPU 数）。e98f95b4fd（2026-06-06）でマージ済み。4.0.x（4.0.7 まで）には入っておらず、master のみ。変更前は固定値 8
 - `IO#read` → dedicated SNT 取得 → `snt_cnt--` → `native_thread_check_and_create_shared` で補充
 - ブロック中の Ractor は SNT を解放して休眠（M:N の恩恵）
 - **上流 master（`17aeb89200`、2026-10-10）での変化**: スケジューラは `thread_sched.c` / `thread_sched_mn.c` に移った。余った SNT は retire するようになり（`43793ca21a`、`SNT_KEEP_SECONDS` は削除）、タイムアウト付き待ちはタイマーホイール化され、I/O 待ちは `EPOLLONESHOT` 化された。per-Ractor GC も入った。上の CPU 内訳は Ruby 4.0.2 での計測なので、master での再計測が必要 → [internals/upstream-scheduler-changes-2026](internals/upstream-scheduler-changes-2026.md)

@@ -5,6 +5,8 @@ tags: [finding]
 
 # rperf（wall モード）vs perf（CPU モード）— プロファイラ比較と新発見
 
+> **2026-10-11 注記**: Ruby 4.0.2 + biryani v0.0.12 での計測。v0.0.14 以降の biryani は `Ractor.select` を使わない（[internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md)）。
+
 ## プロファイラの動作結果
 
 | プロファイラ | 結果 | 備考 |

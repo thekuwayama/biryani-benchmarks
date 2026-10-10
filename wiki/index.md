@@ -2,7 +2,7 @@
 
 **ゴール**: ruby/ruby の Ractor にパフォーマンス関連のコントリビュートをする。
 
-最終更新: 2026-08-01（Q2 解決 — ノンブロッキング I/O 化で M:N スケジューラの epoll パスに乗れるか調査）
+最終更新: 2026-10-11（Ruby master 17aeb89200 と biryani 0.0.15 で再計測。per-Ractor GC のコストと IO コピー不可を記録）
 
 ---
 
@@ -10,6 +10,8 @@
 
 - [status](status.md) — 現時点の総合的理解とコントリビュート候補
 - [log](log.md) — セッションの時系列記録
+- [source-reading-guide](source-reading-guide.md) — ruby/ruby ソースコードの読み方ガイド（`17aeb89200` 基準）
+- [contributions/README](contributions/README.md) — コントリビュート候補の一覧と判断基準
 
 ---
 
@@ -18,7 +20,7 @@
 - [scenarios/baseline-default](scenarios/baseline-default.md) — デフォルト（-c50 -m100）: 4,981 req/s、latency 866ms
 - [scenarios/sweep-m-parameter](scenarios/sweep-m-parameter.md) — `-m` スイープ（1〜100）: ピーク m=50、6,183 req/s。レイテンシは m に線形比例
 - [scenarios/sweep-c-parameter](scenarios/sweep-c-parameter.md) — `-c` スイープ（10〜100、m=50 固定）: ピーク c=25、7,695 req/s（全体最高）
-- [scenarios/sweep-ruby-max-cpu](scenarios/sweep-ruby-max-cpu.md) — **RUBY_MAX_CPU スイープ（I/O バウンド）**: 全3回実施。Ruby 4.0.5 unset で旧デフォルト比 +4.3%（PR 効果確認）
+- [scenarios/sweep-ruby-max-cpu](scenarios/sweep-ruby-max-cpu.md) — **RUBY_MAX_CPU スイープ（I/O バウンド）**: 全3回実施。Ruby 4.0.5 unset は 4.0.2 比 +4.3%（e98f95b4fd は 4.0.5 に未含なので PR の効果ではない）
 - [scenarios/ruby-master-vs-405](scenarios/ruby-master-vs-405.md) — **Ruby 4.0.5 vs master 17aeb89200**（biryani 0.0.15）: master は約 3,400 req/s（4.0.5 の約 43%）、最大 RSS 2.2 GB（約 20 倍）
 - [scenarios/sweep-ruby-max-cpu-cpu-bound](scenarios/sweep-ruby-max-cpu-cpu-bound.md) — **RUBY_MAX_CPU スイープ（CPU バウンド）**: ピーク cpu=4、1,317 req/s。デフォルト8より+5.5%
 
@@ -59,7 +61,7 @@
 
 ## 未解決の疑問
 
-- [questions/README](questions/README.md) — Q1〜Q7（Q1・Q2・Q3・Q4・Q5 解決済み。Q6: 調査中 — SNT_KEEP_SECONDS が SNT 縮小の鍵。Q7: 未着手 — biryani ノンブロッキング化の実測。Q8: 一部解決 — per-Ractor GC の Ractor ごとの固定コスト）
+- [questions/README](questions/README.md) — Q1〜Q8（Q1・Q2・Q3・Q4・Q5 解決済み。Q6: 一部は上流で解決（SNT retire）、master で再計測待ち。Q7: 未着手 — biryani ノンブロッキング化の実測。Q8: 一部解決 — per-Ractor GC の Ractor ごとの固定コスト）
 
 ---
 
@@ -69,8 +71,8 @@
 - [contributions/objspace-absorb-free-pages-tail](contributions/objspace-absorb-free-pages-tail.md) — **候補（PR）**: `objspace_absorb` の free page 連結を O(N²) → O(src) に（実験ビルドで効果確認済み）
 - [contributions/ractor-io-copy-regression](contributions/ractor-io-copy-regression.md) — **候補（issue）**: master で IO を Ractor にコピーで渡せなくなった
 - [contributions/snt-replenishment-overhead](contributions/snt-replenishment-overhead.md) — **調査中**: SNT 補充の頻繁な pthread_create を削減（CPU ~10%）。縮小側は上流で実装済み、master で再計測待ち
-- [contributions/snt-keep-seconds-enable](contributions/snt-keep-seconds-enable.md) — **クローズ**: SNT タイムアウト終了時の nt クリーンアップ修正 + SNT_KEEP_SECONDS 有効化 → 上流で実装済み（`dce74ebf04` / `43793ca21a`）
 
 ### クローズ済み
 
+- [contributions/snt-keep-seconds-enable](contributions/snt-keep-seconds-enable.md) — SNT タイムアウト終了時の nt クリーンアップ修正 + SNT_KEEP_SECONDS 有効化 → 上流で実装済み（`dce74ebf04` / `43793ca21a`）
 - [contributions/cond-signal-vs-broadcast](contributions/cond-signal-vs-broadcast.md) — ~~broadcast → signal~~（前提誤り：Linux では broadcast は走らない）

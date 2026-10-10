@@ -4,6 +4,15 @@
 
 ---
 
+## [2026-10-11] review | wiki 整合性チェック
+
+- lychee: 相対リンクと GitHub 以外の外部リンクはエラー 0。GitHub の permalink 95 件は、ファイルの存在と行番号の範囲をローカルで確認した（GitHub へのアクセスはレート制限で 503 になるため）
+- index.md: 最終更新日・Q6 の状態・Q1〜Q8 の範囲を更新。クローズ済みの `snt-keep-seconds-enable` を「クローズ済み」に移し、`source-reading-guide` と `contributions/README` を特殊ページに追加。sweep-ruby-max-cpu の「PR 効果確認」を訂正（4.0.5 に e98f95b4fd は入っていない）
+- status.md: アーキテクチャ図を biryani v0.0.15（単一ポート）に更新。Wall time / CPU の内訳に、計測した Ruby と biryani のバージョンを明記し、4.0.5 + 0.0.15 と master の内訳を追記。master は「そのままでは動かない、シムで動かすと約 43%」の順に整理。`default_max_cpu` の説明を「論理 CPU 数、4.0.7 まで未含」に訂正
+- `Ractor.select` 33.5% に触れる findings 3 ページと Q1 に、biryani v0.0.12 時点の計測である旨の注記を追加
+
+---
+
 ## [2026-10-11] benchmark | Ruby 4.0.5 vs master 17aeb89200（biryani 0.0.15）
 
 - master `17aeb89200` を Lima VM でビルド（4.0.5 と同じ configure）。biryani 0.0.15 で `-c25 -m50` を比較した

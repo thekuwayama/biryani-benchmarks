@@ -5,6 +5,8 @@ tags: [finding]
 
 # `Ractor.select` 33.5% の内訳（Q1 解決）
 
+> **2026-10-11 注記**: biryani v0.0.12 での分析。v0.0.14 以降の biryani は `Ractor.select` を使わず、単一ポートの `Port#receive` で待つ（[internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md)）。
+
 rperf wall モードで `-c25 -m50` を計測したとき `Ractor.select` が wall time の 33.5% を占める。
 その待機時間の内訳を、biryani のアーキテクチャと C 実装から解明した。
 
