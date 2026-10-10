@@ -1,5 +1,6 @@
 ---
 date: 2026-05-17
+updated: 2026-10-11
 tags: [internals]
 ---
 
@@ -7,15 +8,23 @@ tags: [internals]
 
 biryani のソースコード（`lib/biryani/server.rb`, `connection.rb`, `stream.rb`, `streams_context.rb`）を調査した結果。
 
+> **2026-10-11 更新（`raw/biryani` を v0.0.12 → v0.0.15 に更新）**: v0.0.14 の `0f28e70`（2026-08-15）で、
+> Connection Ractor の待ち受けが **`Ractor.select(@sock, @streams_ctx.tx)` から、単一の `Ractor::Port`（`@port`）に対する `Port#receive` に変わった**。
+> recv_loop と Stream Ractor はどちらも同じ `@port` に送り、Connection は先頭のタグ（`:frame` / `:response` / `:eof`）で振り分ける。
+> 本ページの記述は v0.0.15 に合わせて更新した。`Ractor.select` を前提とする計測（rperf の `Ractor.select` 33.5% など）は v0.0.12 時点のもの。
+
 ## Ractor の構造
 
 ```
 Server#run（ループ）
   └─ TCP接続ごとに Ractor.new → Connection Ractor
        ├─ recv_loop Ractor（フレーム受信専用）
-       │    └─ Ractor::Port (@sock) で Connection に送信
+       │    └─ 共有 Ractor::Port (@port) に [:frame, obj] / :eof を送信
        └─ ストリームごとに Stream Ractor（リクエスト処理）
-            └─ Ractor::Port (@tx) でレスポンスを Connection に返す
+            └─ 同じ @port に [:response, res, stream_id] を送信
+
+  Connection Ractor は select_loop で @port.receive し、タグで振り分ける
+  （v0.0.12 までは @sock と @tx の 2 ポートを Ractor.select で待っていた）
 ```
 
 ### Server（`server.rb`）
@@ -41,29 +50,43 @@ TCP 接続を `accept` するたびに 1 つの Ractor を生成する。この 
 **recv_loop** — フレーム受信専用の Ractor を 1 つ追加生成：
 ```ruby
 def recv_loop(io)
-  Ractor.new(io, @sock = Ractor::Port.new) do |io_, sock_|
+  Ractor.new(io, @port) do |io_, port_|
     loop do
       obj = Frame.read(io_)
-      break if obj.nil?
-      sock_.send(obj, move: true)
+      if obj.nil?
+        port_.send(:eof, move: true)
+        break
+      end
+
+      port_.send([:frame, obj], move: true)
     end
   end
 end
 ```
 
-**select_loop** — `Ractor.select` で受信フレームとストリームレスポンスを多重化：
+**select_loop** — 単一の `@port` から `Port#receive` で受け取り、タグで振り分ける（v0.0.14 以降）：
 ```ruby
 def select_loop(io)
   loop do
-    port, obj = Ractor.select(@sock, @streams_ctx.tx)
-    if port == @sock
-      recv_dispatch(io, obj)      # 受信フレームを処理
-    else
-      handle_response(io, res, stream_id)  # ストリームからのレスポンスを送信
+    break if @recv_done && @streams_ctx.empty?
+
+    case @port.receive
+    in :eof
+      @recv_done = true
+    in [:frame, obj]
+      recv_dispatch(io, obj)                # 受信フレームを処理
+    in [:response, res, stream_id]
+      handle_response(io, res, stream_id)   # ストリームからのレスポンスを送信
     end
+
+    break if closed?
   end
 end
 ```
+
+受信フレームとレスポンスが 1 本のポートに FIFO で並ぶので、到着順に処理される。
+C 実装の側では `ractor_selector__wait`（毎 wakeup で全ポートを走査）を通らなくなり、
+通常の `Port#receive`（[`ractor_receive`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_sync.c#L1547)（`ractor_sync.c:1547`）→ `ractor_wait_receive`）で待つ形になる（[ractor-select-implementation](ractor-select-implementation.md) の議論は v0.0.12 向け）。
 
 ### Stream（`stream.rb`）
 
@@ -74,8 +97,13 @@ def initialize(tx, stream_id, proc)
   @rx = Ractor.new(tx, stream_id, proc) do |tx, stream_id, proc|
     unless (req = Ractor.recv).nil?
       res = HTTP::Response.default
-      proc.call(req, res)
-      tx.send([res, stream_id], move: true)
+      begin
+        proc.call(req, res)
+        res.validate
+      rescue StandardError => e
+        res = HTTP::Response.internal_server_error
+      end
+      tx.send([:response, res, stream_id], move: true)
     end
   end
 end
@@ -84,7 +112,7 @@ end
 この Ractor は：
 1. `Ractor.recv` でリクエストを受け取る
 2. ユーザー定義の proc を実行
-3. `Ractor::Port (@tx)` でレスポンスを Connection Ractor に送信
+3. Connection と共有する `Ractor::Port`（`tx` = Connection の `@port`）でレスポンスを送信
 4. 終了（プールなし、1リクエスト1生成）
 
 ## 同時 Ractor 数の計算
@@ -117,7 +145,7 @@ end
 
 - `Ractor::Port` の内部実装（ruby/ruby の `ractor.c`）— futex の使われ方
 - Ractor プールを実装した場合のスループット・レイテンシへの影響
-- `Ractor.select` が複数 Port を待つ際のスケジューリング挙動
+- ~~`Ractor.select` が複数 Port を待つ際のスケジューリング挙動~~ → v0.0.14 で単一ポートの `Port#receive` に変わった。単一ポートに集約したことで、rperf の wall time 内訳（旧 `Ractor.select` 33.5%）がどう変わるか
 
 ## 関連ページ
 

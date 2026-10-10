@@ -140,7 +140,7 @@ Ractor.new(socket.accept, @proc) do |io, proc|
 end
 ```
 
-これだけでは不十分で、`frame.rb:138,143`（`Frame.read` の `io.read`）と `connection.rb:300,351`
+これだけでは不十分で、`frame.rb:154,159`（`Frame.read` の `io.read`）と `connection.rb:308,359`
 （`io.write`、preface 読み込みの `io.read`）を `read_nonblock`/`write_nonblock` + `rescue
 IO::WaitReadable/WaitWritable` + リトライに書き換える必要がある。単に `nonblock = true` だけ
 入れて呼び出し側を変えなければ、`read` がブロッキング前提のまま `Errno::EAGAIN` を吐いて

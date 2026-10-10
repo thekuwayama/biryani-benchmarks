@@ -4,6 +4,17 @@
 
 ---
 
+## [2026-10-11] maintenance | raw/biryani を v0.0.15 に更新
+
+- `raw/biryani` を v0.0.12（`8753e5a`）→ v0.0.15（`7535a4b`、2026-09-30）に更新
+- **Ractor 構成の変更**: v0.0.14 の `0f28e70` で、Connection Ractor の待ち受けが `Ractor.select(@sock, @streams_ctx.tx)` から単一の共有 `Ractor::Port`（`@port`）の `Port#receive` に変わった。recv_loop は `[:frame, obj]` / `:eof` を、Stream Ractor は `[:response, res, stream_id]` を同じポートに送る
+- このため rperf の `Ractor.select` 33.5% や `ractor_selector__wait` の全ポート走査に関する分析は v0.0.12 時点のものになった。`internals/biryani-ractor-architecture.md` を v0.0.15 に合わせて更新
+- その他: `DataBuffer#take!` のアロケーション削減、HPACK/PADDED のリファクタ、SETTINGS 関連の修正、`.ruby-version` を 4.0.7 に
+- Q7 の biryani 行番号（`frame.rb` / `connection.rb`）を v0.0.15 に更新
+- 次のステップ: Ruby 4.0.5 + biryani 0.0.15 でベースラインを取り直し、master `17aeb89200` + biryani 0.0.15 と比較する（Ruby と biryani を同時に変えないため）
+
+---
+
 ## [2026-10-11] maintenance | raw/ruby-src を master 17aeb89200 に更新・上流変更の取り込み
 
 - `raw/ruby-src` を `e98f95b4fd`（2026-06-06）→ master `17aeb89200`（2026-10-10、約 3,600 コミット）に更新
