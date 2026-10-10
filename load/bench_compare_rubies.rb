@@ -9,11 +9,12 @@
 # 環境変数:
 #   CPUS   カンマ区切り。"unset" は RUBY_MAX_CPU 未設定（デフォルト: unset,4,8）
 #   REPEAT 各条件の繰り返し回数（デフォルト: 3）
+#   N      h2load の総リクエスト数（デフォルト: 10000）
 
 require 'socket'
 
 PORT   = 8894
-N      = 10_000
+N      = Integer(ENV['N'] || 10_000)
 C      = 25
 M      = 50
 T      = 10
@@ -27,6 +28,7 @@ SERVER_SCRIPT = <<~RUBY
   require 'socket'
   require 'biryani'
   require '#{File.expand_path('ractor_io_move_shim', __dir__)}' if ENV['BIRYANI_IO_MOVE_SHIM'] == '1'
+  require '#{File.expand_path('ractor_pool_shim', __dir__)}' if ENV['BIRYANI_STREAM_POOL']
   Ractor.new do
     s = TCPServer.open(#{PORT})
     server = Biryani::Server.new(
@@ -63,7 +65,7 @@ def parse(out)
 end
 
 $stderr.puts "#{RUBY_DESCRIPTION}"
-$stderr.puts "-c#{C} -m#{M} -n#{N} -t#{T}, REPEAT=#{REPEAT}, BIRYANI_IO_MOVE_SHIM=#{ENV['BIRYANI_IO_MOVE_SHIM'] || '0'}"
+$stderr.puts "-c#{C} -m#{M} -n#{N} -t#{T}, REPEAT=#{REPEAT}, BIRYANI_IO_MOVE_SHIM=#{ENV['BIRYANI_IO_MOVE_SHIM'] || '0'}, BIRYANI_STREAM_POOL=#{ENV['BIRYANI_STREAM_POOL'] || '-'}"
 
 rows = []
 CPUS.each do |cpu|
