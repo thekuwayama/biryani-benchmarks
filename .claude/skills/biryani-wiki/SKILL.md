@@ -40,7 +40,7 @@ wiki の保守（lychee・index.md/source-reading-guide.md 更新・整合性確
 |------|------|
 | プロジェクトルート | `/path/to/thekuwayama/biryani-benchmarks` |
 | Lima VM | ベンチマーク・perf は Lima VM 上の Linux で動作。コマンドは `limactl shell --workdir /biryani-benchmarks lima bash -c 'eval "$(rbenv init -)" && <コマンド>'` |
-| ruby/ruby ソース | `raw/ruby-src/`（v4.0.2 サブモジュール）— `ractor.c`, `ractor_sync.c`, `thread_pthread.c` など |
+| ruby/ruby ソース | `raw/ruby-src/`（master `17aeb89200` サブモジュール）— `ractor.c`, `ractor_sync.c`, `thread_sched.c`, `thread_sched_mn.c` など |
 | biryani ソース | `raw/biryani/`（v0.0.12 サブモジュール）— アーキテクチャ調査時に読む |
 | Wiki | `wiki/` — Claude が書き、ユーザーが読む |
 
@@ -52,7 +52,7 @@ wiki の保守（lychee・index.md/source-reading-guide.md 更新・整合性確
 
 ruby/ruby の Ractor 関連ソースを調査するとき：
 
-- 対象ファイル（ruby/ruby）: `raw/ruby-src/ractor.c`, `raw/ruby-src/ractor_sync.c`, `raw/ruby-src/thread_pthread.c`, `raw/ruby-src/vm_core.h`
+- 対象ファイル（ruby/ruby）: `raw/ruby-src/ractor.c`, `raw/ruby-src/ractor_sync.c`, `raw/ruby-src/thread_sched.c`, `raw/ruby-src/thread_sched_mn.c`, `raw/ruby-src/thread_pthread.c`, `raw/ruby-src/vm_core.h`
 - 対象ファイル（biryani）: `raw/biryani/lib/` 以下 — Ractor アーキテクチャや I/O パターンを調査するとき
 - 推奨読書順・関数・行番号は [wiki/source-reading-guide.md](../../wiki/source-reading-guide.md) を参照
 - 調査結果を `wiki/internals/<トピック>.md` に記録する
