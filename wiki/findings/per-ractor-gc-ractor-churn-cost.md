@@ -1,6 +1,6 @@
 ---
 date: 2026-10-11
-updated: 2026-11-03
+updated: 2026-11-04
 tags: [finding]
 ---
 
@@ -103,19 +103,30 @@ biryani ではリクエスト処理中の absorb は少なく、ほとんどが�
   1 プロセスで 10,000 リクエストの h2load を続けて流す `load/bench_c.rb` は、2 回目の run の途中で anon-rss 3.6 GB に達し、**3 回中 3 回とも OOM killer に kill された**。`load/bench_m.rb` も途中から失敗した。
   1 回目の run のメモリが返りきらないまま 2 回目に入っている。4.1 を既定にした今、サーバーを使い回すスクリプトは 4 GB の VM では使えない
 - 同じ条件（`-c50 -m100`）で、OOM ではなく `[BUG] cannot create a new page after major GC` で落ちることもある → [findings/gc-cannot-create-page-after-major-gc](gc-cannot-create-page-after-major-gc.md)
-- **run を重ねたときの RSS（2026-11-03）**: 1 プロセスで `h2load -n5000 -c25 -m50` を 8 回続けて流し、各 run の後の RSS を測った（VM 4 GB）。
-  4.1.0-preview1 は増え続けるのではなく、**頭打ちに向かう**。各 run の後に 3 秒待っても RSS は下がらなかった（OS には返さず、プロセスの中で再利用していると考えられる）
+- **run を重ねたときの RSS**: 1 プロセスで `h2load -n5000 -c25 -m50` を 8 回続けて流し、各 run の後の RSS を測った。各 run の後に 3 秒待っても RSS は下がらなかった
 
   ```
-  run          1      2      3      4      5      6      7      8
-  4.1.0-pre1   840  1,154  1,380  1,697  2,054  2,168  2,259  2,296 MB
-  （増分）      —    +314   +226   +317   +357   +114    +91    +37
-  4.0.5         87     99    137    169    176    205    217    239 MB
+  run                                   1      2      3      4      5      6      7      8
+  4.1.0-pre1 biryani 7359e96（11-03）    840  1,154  1,380  1,697  2,054  2,168  2,259  2,296 MB
+  4.1.0-pre1 biryani c417f0f（11-04）    745  1,147  1,439  1,514  1,819  2,049  2,345  2,548 MB
+  4.0.5      biryani 7359e96（11-03）     87     99    137    169    176    205    217    239 MB
+  4.0.5      biryani c417f0f（11-04）     86    102    118    123    125    130    148    151 MB
   ```
 
-- **VM を 8 GiB にした後（2026-11-03）**: `bench_c`（10,000 リクエストの run を 4 回）と `bench_m`（6 回）は、4.1.0-preview1 で全件成功した。
-  最大 RSS は `bench_c` 4.7 GB、`bench_m` 5.1 GB。1 回の run が長いほど、回収されないまま溜まる量が増え、頭打ちの高さも上がる（5,000 リクエストずつなら約 2.3 GB）。
-  run の回数が多い `bench_m` のほうが高いので、もっと長いスイープを 1 プロセスで回すと 8 GiB でも足りなくなる可能性がある
+  - 11-03 は VM 4 GB、11-04 は 8 GiB。biryani `7359e96` までは、peer が切断しても Connection Ractor が終わらなかった（[internals/biryani-ractor-architecture](../internals/biryani-ractor-architecture.md)）。
+    `c417f0f` では、各 run の 3 秒後に生きている Ractor は 2 個（main とサーバー）だけで、Connection Ractor は残っていない
+  - 11-03 の計測では増分が小さくなっていったので「頭打ちに向かう」と書いたが、11-04 の計測では 8 回目まで +200〜300 MB ずつ増え続けた。**8 回では頭打ちになるとは言えない**
+  - 4.0.5 は、Connection Ractor が終わるようになって増え方が小さくなった（239 → 151 MB）。4.1.0-preview1 は Connection Ractor が終わっても増え続けるので、主な原因は Connection Ractor の取り残しではない
+
+- **VM を 8 GiB にした後の `bench_c` / `bench_m`**（4.1.0-preview1。`bench_c` は 10,000 リクエストの run を 4 回、`bench_m` は 6 回）:
+
+  | biryani | `bench_c` | `bench_m` |
+  |---|---|---|
+  | `7359e96` | 成功（最大 RSS 4.7 GB） | 3 回中 2 回成功（5.1 GB / 5.0 GB）、1 回は OOM で kill（7.5 GB） |
+  | `c417f0f` | 成功（4.5 GB） | 3 回とも最後の `-m100`（同時 Ractor 約 5,100）の run で OOM で kill（7.5〜7.7 GB） |
+
+  8 GiB でも `bench_m` は安定して通らない。biryani `c417f0f` のほうが kill されやすいが、回数が少なく、差があるとは言い切れない。
+  原因の候補: `c417f0f` では各 run の終わりに、多数のリクエストを処理した Connection Ractor が終了する。そのたびに大きな objspace の retire GC と absorb が走る（未検証）
 
 ### 4. プール化で回避できる
 

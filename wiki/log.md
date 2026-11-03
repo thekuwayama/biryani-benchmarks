@@ -4,6 +4,18 @@
 
 ---
 
+## [2026-11-04] maintenance | raw/biryani を main c417f0f に更新（peer 切断で Connection 終了）
+
+- `raw/biryani` を main `7359e96` → `c417f0f` に更新した。`60df001` で、peer が接続を閉じたら Connection Ractor が終わるようになった。
+  それまでは閉じたストリームが `@streams_ctx` に残り、peer が切断しても Connection Ractor と fd が残っていた。あわせて、Stream は Connection が終わっていたらレスポンスを捨てる（`rescue Ractor::ClosedError`）
+- `load/ractor_pool_shim.rb` のワーカーにも同じ `rescue Ractor::ClosedError` を入れた。`Ractor::ClosedError` は `StopIteration` のサブクラスなので、捕まえないと `loop` を抜けてワーカーが止まる
+- 動作確認（8 GiB の VM）: `server_c25_m50`（4.1.0-preview1・4.0.5）、プール 4（同）、`rake load` は全件成功。各 run の後に Connection Ractor が残らないことを `Ractor.count` で確かめた
+- run を重ねたときの RSS を取り直した。4.0.5 は増え方が小さくなった（8 回で 239 → 151 MB）が、4.1.0-preview1 は 745 → 2,548 MB と増え続けた。11-03 に書いた「頭打ちに向かう」は言い過ぎだったので訂正した → `findings/per-ractor-gc-ractor-churn-cost.md` §3
+- `bench_m` は 8 GiB でも最後の `-m100` の run で OOM になる（`c417f0f` で 3 回中 3 回、`7359e96` で 3 回中 1 回）。`bench_c` は通る
+- 次のステップ: `bench_c` / `bench_m` を run ごとにサーバーを起動し直す形にするか、VM のメモリをさらに増やすかを決める（ユーザー判断待ち）。その後は Q10
+
+---
+
 ## [2026-11-03] maintenance | Lima VM のメモリを 8 GiB に（4.1.0-preview1 の OOM 対策）
 
 - 4.1.0-preview1 で `bench_c` / `bench_m` が OOM で kill される件を調べた。1 プロセスで `h2load -n5000 -c25 -m50` を 8 回続けて流すと、RSS は 840 → 2,296 MB と増えるが、増分は小さくなっていき頭打ちに向かった（4.0.5 は 87 → 239 MB）

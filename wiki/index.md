@@ -2,7 +2,7 @@
 
 **ゴール**: ruby/ruby の Ractor にパフォーマンス関連のコントリビュートをする。
 
-最終更新: 2026-11-03（Ruby 4.1.0-preview1・biryani main `7359e96` に移行。`raw/ruby-src` も preview1 に更新。preview1 で GC の `rb_bug` を発見）
+最終更新: 2026-11-04（biryani main `c417f0f` に更新。peer が切断したら Connection Ractor が終わるようになった。4.1.0-preview1 の RSS の増加を取り直した）
 
 ---
 
