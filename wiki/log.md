@@ -4,6 +4,16 @@
 
 ---
 
+## [2026-11-03] maintenance | Lima VM のメモリを 8 GiB に（4.1.0-preview1 の OOM 対策）
+
+- 4.1.0-preview1 で `bench_c` / `bench_m` が OOM で kill される件を調べた。1 プロセスで `h2load -n5000 -c25 -m50` を 8 回続けて流すと、RSS は 840 → 2,296 MB と増えるが、増分は小さくなっていき頭打ちに向かった（4.0.5 は 87 → 239 MB）
+- Lima VM のメモリを 4 GiB → **8 GiB** にした（`limactl edit lima --memory 8`、リポジトリの `lima.yaml` も 8GiB に）。CPU は 4 のまま。**これより前の計測はすべて 4 GB の VM**
+- 8 GiB で `bench_c` / `bench_m` は全件成功した。最大 RSS は 4.7 GB / 5.1 GB → `findings/per-ractor-gc-ractor-churn-cost.md` §3 に追記
+- `[BUG] cannot create a new page after major GC` は 8 GiB でも 8 回目に再現した（Ractor 数 219、バックトレースは 4 GB のときと同じ）。4.0.5 は 10 回とも成功。メモリ不足ではないことが確定した → `findings/gc-cannot-create-page-after-major-gc.md` に追記
+- 次のステップ: 変わらず Q10（`heap_prepare` の rb_bug の最小再現と経路の特定）
+
+---
+
 ## [2026-11-03] maintenance | biryani main・Ruby 4.1.0-preview1・raw/ruby-src preview1 に更新
 
 - `raw/biryani` を v0.0.15（`7535a4b`）→ main `7359e96`（2026-11-03）に更新した。`cac9ff9` で IO を Ractor に move で渡すようになり、`15154b8` で recv_loop が lingering close をするようになった（バージョンは 0.0.15 のまま）

@@ -38,7 +38,7 @@
 - [findings/rperf-concurrent-vs-parallel](findings/rperf-concurrent-vs-parallel.md) — rperf の計測モデル：各 Ractor 独立の並行計測であり、実時間（並列）の重複を含む
 - [findings/ractor-pool-feasibility](findings/ractor-pool-feasibility.md) — **Q3 解答**: Ractor プールは実装可能。当初は効果が限定的と予想したが、2026-10-11 の実測で 4.0.5 でも約 2.4 倍になり訂正
 - [findings/per-ractor-gc-ractor-churn-cost](findings/per-ractor-gc-ractor-churn-cost.md) — **Q8**: master の per-Ractor GC では Ractor ごとに objspace 生成・retire GC・absorb が走る。`objspace_absorb` に O(N²) の末尾探索
-- [findings/gc-cannot-create-page-after-major-gc](findings/gc-cannot-create-page-after-major-gc.md) — **Q10**: 4.1.0-preview1 で biryani（`-c50 -m100`）が `[BUG] cannot create a new page after major GC` で落ちる（10 回中 2 回）。OOM ではなく `allocatable_bytes` が 0 のまま
+- [findings/gc-cannot-create-page-after-major-gc](findings/gc-cannot-create-page-after-major-gc.md) — **Q10**: 4.1.0-preview1 で biryani（`-c50 -m100`）が `[BUG] cannot create a new page after major GC` で落ちる（4 GB の VM で 10 回中 2 回、8 GiB でも再現）。OOM ではなく `allocatable_bytes` が 0 のまま
 - [findings/ractor-io-copy-regression](findings/ractor-io-copy-regression.md) — master・4.1.0-preview1 では IO を Ractor にコピーで渡せない（4.0.x は `#clone` で動いた）。biryani 0.0.15 が動かない（main `cac9ff9` で move に変更済み）
 - [findings/snt-keep-seconds-disabled](findings/snt-keep-seconds-disabled.md) — `SNT_KEEP_SECONDS = 0` により SNT プールが実行時に縮小しない（`e98f95b4fd` 時点。上流で削除済み、retire に置き換え）
 

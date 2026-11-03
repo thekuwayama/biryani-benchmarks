@@ -216,7 +216,7 @@ Stream Ractor をプール化すると、**4.0.5 でもスループットが約 
 
 ### Q10: 4.1.0-preview1 の `[BUG] cannot create a new page after major GC` はどの経路で起きるのか（→ 未着手）
 
-4.1.0-preview1 で biryani に `-n10000 -c50 -m100` をかけると、10 回中 2 回、`heap_prepare` の `rb_bug` でプロセスが落ちた（[findings/gc-cannot-create-page-after-major-gc](../findings/gc-cannot-create-page-after-major-gc.md)）。
+4.1.0-preview1 で biryani に `-n10000 -c50 -m100` をかけると、4 GB の VM で 10 回中 2 回、8 GiB の VM でも 8 回目に、`heap_prepare` の `rb_bug` でプロセスが落ちた（[findings/gc-cannot-create-page-after-major-gc](../findings/gc-cannot-create-page-after-major-gc.md)）。
 OOM ではなく、2 回の GC の後も objspace の `allocatable_bytes` が 0 のまま、再利用できる空きページもなかった。
 上流はグローバル GC 後に予算 0 で残る objspace を手当てしている（`default.c:9873-9891`）が、それ以外の経路が残っているとみられる。
 

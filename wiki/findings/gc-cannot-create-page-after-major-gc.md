@@ -1,13 +1,14 @@
 ---
 date: 2026-11-03
+updated: 2026-11-03
 tags: [finding]
 ---
 
 # 4.1.0-preview1 で biryani が `[BUG] cannot create a new page after major GC` で落ちる
 
 Ruby 4.1.0-preview1（`2d08b5f42f`）で biryani main（`7359e96`）に `h2load -n10000 -c50 -m100 -t10`（`bundle exec rake load`）をかけると、
-**10 回中 2 回、プロセスが `rb_bug` で落ちた**。場所は GC のページ確保（[`heap_prepare`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/gc/default/default.c#L3120-L3183)）で、
-OOM killer の記録はなかった。そのため、メモリが足りなかったのではなく、per-Ractor GC で**ヒープを広げる予算（`allocatable_bytes`）が 0 のまま**になったと考えられる。
+**4 GB の VM で 10 回中 2 回、8 GiB の VM でも 8 回目に、プロセスが `rb_bug` で落ちた**。場所は GC のページ確保（[`heap_prepare`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/gc/default/default.c#L3120-L3183)）で、
+OOM killer の記録はなく、VM のメモリを倍にしても起きた。そのため、メモリが足りなかったのではなく、per-Ractor GC で**ヒープを広げる予算（`allocatable_bytes`）が 0 のまま**になったと考えられる。
 上流は同じ失敗をグローバル GC の経路では手当てしているので、手当てされていない経路が残っている可能性がある。原因は未特定。
 
 ## 詳細
@@ -16,9 +17,11 @@ OOM killer の記録はなかった。そのため、メモリが足りなかっ
 
 - Lima VM（aarch64、4 CPU、4 GB）、`raw/biryani` main `7359e96`、`load/server_spec.rb`（`bundle exec rake load`）
 - 1 プロセスで biryani サーバーを起動し、`h2load -n10000 -c50 -m100 -t10` を 1 回流す（同時 Ractor は最大で約 5,100 個）
-- 4.1.0-preview1 で 10 回実行し、1 回目と 10 回目で落ちた。落ちた回の h2load は、それぞれ 12 件と 2,378 件が失敗した
-- 同じ時間帯の `dmesg` に OOM killer の記録はない。`vm.max_map_count` は 1048576
-- 4.0.5 では起きない（per-Ractor GC がない）。master `17aeb89200` は `gc/default/default.c` が preview1 と同じなので、同じく起きるはず（未確認）
+- 4.1.0-preview1、VM 4 GB: 10 回実行し、1 回目と 10 回目で落ちた。落ちた回の h2load は、それぞれ 12 件と 2,378 件が失敗した
+- 4.1.0-preview1、VM 8 GiB（2026-11-03 にメモリを増やした後）: 8 回目で落ちた（h2load は 177 件失敗）。落ちたときの Ractor 数は 219 で、4 GB のときの 1,351 よりずっと少ない
+- どの回も `dmesg` に OOM killer の記録はない。`vm.max_map_count` は 1048576。8 GiB の VM では、落ちた後も空きメモリは 7 GB 以上あった
+- 4.0.5（per-Ractor GC がない）では、8 GiB の VM で 10 回実行して一度も落ちなかった
+- master `17aeb89200` は `gc/default/default.c` が preview1 と同じなので、同じく起きるはず（未確認）
 
 ### クラッシュレポート（抜粋）
 
@@ -50,6 +53,8 @@ thread_do_start_proc         thread.c:641  ← Connection Ractor
 ```
 
 Connection Ractor が、レスポンスを送るときに Regexp を 1 つ確保しようとして落ちている。確保したオブジェクト自体に特別な点はない。
+8 GiB の VM で落ちた回も、Ruby レベル・C レベルのバックトレースはまったく同じだった（`streams_context.rb:82` の Regexp の確保 → `heap_prepare` の `default.c:3174`）。
+バックトレースを取れた 2 回（最初のスモークテストの回は取れていない）が同じ場所なので、Connection Ractor の objspace で、この確保が起きやすい状態があるのかもしれない（未検証）。
 
 ### コード上の読み
 

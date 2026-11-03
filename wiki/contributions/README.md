@@ -36,7 +36,7 @@ tags: [contribution]
 | 候補 | 状態 |
 |------|------|
 | SNT 補充オーバーヘッド削減（ヒステリシス案） | 調査中（縮小側は上流で実装済み。次の実験: master `17aeb89200` で再計測）|
-| 4.1.0-preview1 の `[BUG] cannot create a new page after major GC`（issue 候補） | 調査中（biryani `-c50 -m100` で 10 回中 2 回再現。原因の経路は未特定 → Q10）|
+| 4.1.0-preview1 の `[BUG] cannot create a new page after major GC`（issue 候補） | 調査中（biryani `-c50 -m100` で 4 GB の VM で 10 回中 2 回、8 GiB でも再現。4.0.5 では起きない。原因の経路は未特定 → Q10）|
 
 詳細: [contributions/snt-replenishment-overhead](snt-replenishment-overhead.md), [findings/gc-cannot-create-page-after-major-gc](../findings/gc-cannot-create-page-after-major-gc.md)
 

@@ -54,8 +54,9 @@ biryani v0.0.14 以降の構成（`raw/biryani` は main `7359e96`。v0.0.15 に
 **2026-11-03: Ruby 4.1.0-preview1 に移行**: preview1（`2d08b5f42f`）は master `17aeb89200` の 36 コミット後で、Ractor・スケジューラ・GC のコードは同じ。IO をコピーで渡せない挙動もそのまま入った。
 biryani は main `cac9ff9` で IO を move で渡すようになり、シムなしで 4.1 でも動く。ベンチマークの既定 Ruby（`.ruby-version`）は 4.1.0-preview1 にした。
 上の master の数値は preview1 でもほぼ同じになるはずだが、biryani main（lingering close を含む）との組み合わせでは**まだ計測していない**。
-**preview1 では 2 つの問題が出る**: (1) 1 プロセスで 10,000 リクエストの run を続けて流すと RSS が 3.6 GB に達し、4 GB の VM では OOM で kill される（`bench_c.rb` / `bench_m.rb`）。
-(2) `-c50 -m100` で、10 回中 2 回 `[BUG] cannot create a new page after major GC` で落ちた → [findings/gc-cannot-create-page-after-major-gc](findings/gc-cannot-create-page-after-major-gc.md)
+**preview1 では 2 つの問題が出る**: (1) 1 プロセスで 10,000 リクエストの run を続けて流すと、RSS が 4.7〜5.1 GB に達する（`bench_c.rb` / `bench_m.rb`）。
+4 GB の VM では OOM で kill されたので、**Lima VM のメモリを 8 GiB に増やした**（2026-11-03。それまでの計測はすべて 4 GB）。
+(2) `-c50 -m100` で、`[BUG] cannot create a new page after major GC` で落ちることがある（4 GB で 10 回中 2 回、8 GiB でも 8 回目に再現。4.0.5 は 10 回とも成功）。メモリ不足ではない → [findings/gc-cannot-create-page-after-major-gc](findings/gc-cannot-create-page-after-major-gc.md)
 
 ---
 
@@ -142,7 +143,7 @@ rperf は並行計測（重複あり）なので複数 Ractor の数値を合算
 | Q7 | biryani ノンブロッキング化の実測 | 未着手 |
 | Q8 | per-Ractor GC 下で、使い捨て Ractor の回収は STW を誘発するか | 一部解決（STW より Ractor ごとの固定コストが問題。プール化で回避できる） |
 | Q9 | 4.0.5 でも Ractor の使い捨てはなぜ重いのか | 未着手 |
-| Q10 | 4.1.0-preview1 の `[BUG] cannot create a new page after major GC` の経路 | 未着手（`-c50 -m100` で 10 回中 2 回再現） |
+| Q10 | 4.1.0-preview1 の `[BUG] cannot create a new page after major GC` の経路 | 未着手（`-c50 -m100` で 4 GB の VM で 10 回中 2 回、8 GiB でも再現） |
 
 詳細: [questions/README](questions/README.md)
 
