@@ -4,6 +4,16 @@
 
 ---
 
+## [2026-11-04] benchmark | bench_c / bench_m を run ごとにサーバーを起動し直す形に
+
+- 1 プロセスで全 run を流すと、4.1.0-preview1 では run ごとに RSS が積み上がり、8 GiB の VM でも `bench_m` の `-m100` で OOM になっていた。
+  `bench_compare_rubies` と同じく、run ごとにサーバーを fork・exec し、終わったら止める形にした。各 run の結果が、前の run のメモリや実行の順番に左右されなくなる
+- 4.1.0-preview1（biryani `c417f0f`、8 GiB）で、`bench_c`（`-c10`〜`-c100`）と `bench_m`（`-m1`〜`-m100`）は全件成功した。最大 RSS は 2.4 GB / 2.3 GB（1 回の run のサーバー）
+- `bench_c` の `-c1` / `-c5` は、`-t10` が `-c` より大きいので h2load が起動しないまま（以前からの問題）
+- 次のステップ: Q10
+
+---
+
 ## [2026-11-04] maintenance | raw/biryani を main c417f0f に更新（peer 切断で Connection 終了）
 
 - `raw/biryani` を main `7359e96` → `c417f0f` に更新した。`60df001` で、peer が接続を閉じたら Connection Ractor が終わるようになった。

@@ -55,7 +55,7 @@ biryani v0.0.14 以降の構成（`raw/biryani` は main `c417f0f`。v0.0.15 に
 biryani は main `cac9ff9` で IO を move で渡すようになり、シムなしで 4.1 でも動く。ベンチマークの既定 Ruby（`.ruby-version`）は 4.1.0-preview1 にした。
 上の master の数値は preview1 でもほぼ同じになるはずだが、biryani main（lingering close を含む）との組み合わせでは**まだ計測していない**。
 **preview1 では 2 つの問題が出る**: (1) 1 プロセスで 10,000 リクエストの run を続けて流すと、RSS が 4.5〜7.7 GB に達する（`bench_c.rb` / `bench_m.rb`）。
-4 GB の VM では OOM で kill されたので、**Lima VM のメモリを 8 GiB に増やした**（2026-11-03。それまでの計測はすべて 4 GB）。それでも `bench_m` は、最後の `-m100` の run で OOM になることが多い。
+4 GB の VM では OOM で kill されたので、**Lima VM のメモリを 8 GiB に増やした**（2026-11-03。それまでの計測はすべて 4 GB）。それでも `bench_m` は最後の `-m100` の run で OOM になることが多かったので、`bench_c` / `bench_m` は run ごとにサーバーを起動し直す形にした（2026-11-04。最大 RSS 2.3〜2.4 GB で全件成功）。
 (2) `-c50 -m100` で、`[BUG] cannot create a new page after major GC` で落ちることがある（4 GB で 10 回中 2 回、8 GiB でも 8 回目に再現。4.0.5 は 10 回とも成功）。メモリ不足ではない → [findings/gc-cannot-create-page-after-major-gc](findings/gc-cannot-create-page-after-major-gc.md)
 
 ---
