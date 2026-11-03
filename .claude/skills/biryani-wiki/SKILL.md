@@ -41,7 +41,7 @@ wiki の保守（lychee・index.md/source-reading-guide.md 更新・整合性確
 | プロジェクトルート | `/path/to/thekuwayama/biryani-benchmarks` |
 | Lima VM | ベンチマーク・perf は Lima VM 上の Linux で動作。コマンドは `limactl shell --workdir /biryani-benchmarks lima bash -c 'eval "$(rbenv init -)" && <コマンド>'` |
 | ruby/ruby ソース | `raw/ruby-src/`（v4.1.0-preview1 `2d08b5f42f` サブモジュール）— `ractor.c`, `ractor_sync.c`, `thread_sched.c`, `thread_sched_mn.c` など |
-| biryani ソース | `raw/biryani/`（main `7359e96` サブモジュール。v0.0.15 + IO の move 渡し・lingering close）— アーキテクチャ調査時に読む |
+| biryani ソース | `raw/biryani/`（main `c417f0f` サブモジュール。v0.0.15 + IO の move 渡し・lingering close・peer 切断時の Connection 終了）— アーキテクチャ調査時に読む |
 | Wiki | `wiki/` — Claude が書き、ユーザーが読む |
 
 最新の知見（スループット・CPU/wall time 内訳・コントリビュート候補）は [wiki/status.md](../../wiki/status.md) を参照。

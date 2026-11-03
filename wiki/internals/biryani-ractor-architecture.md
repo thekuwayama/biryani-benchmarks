@@ -1,6 +1,6 @@
 ---
 date: 2026-05-17
-updated: 2026-11-03
+updated: 2026-11-04
 tags: [internals]
 ---
 
@@ -17,6 +17,10 @@ biryani のソースコード（`lib/biryani/server.rb`, `connection.rb`, `strea
 > - `cac9ff9`: IO を Ractor に**コピーではなく move で**渡すようになった（Ruby 4.1 では IO をコピーで渡せないため。→ [findings/ractor-io-copy-regression](../findings/ractor-io-copy-regression.md)）。
 >   ベンチマーク用に入れていた IO move シム（`load/ractor_io_move_shim.rb`）と同じ内容なので、シムは削除した
 > - `15154b8`: recv_loop が lingering close をするようになった（下記）
+>
+> **2026-11-04 更新（`raw/biryani` を main `c417f0f` に更新）**: `60df001` で、**peer が接続を閉じたら Connection Ractor が終わる**ようになった。
+> それまでは、閉じたストリームも `@streams_ctx` に残るため `@streams_ctx.empty?` が真にならず、peer が切断しても Connection Ractor（と fd）が終わらなかった。
+> 1 プロセスで h2load を何度も流す計測では、前の run の Connection Ractor が残り続けていたことになる（→ [findings/per-ractor-gc-ractor-churn-cost](../findings/per-ractor-gc-ractor-churn-cost.md) §3）
 
 ## Ractor の構造
 
@@ -101,7 +105,8 @@ h2load のように `-c` 本の接続を最後まで使い回す負荷では、l
 ```ruby
 def select_loop(io)
   loop do
-    break if @recv_done && @streams_ctx.empty?
+    # EOF の後に進めるのは、ハンドラのレスポンス待ち（half_closed_remote）のストリームだけ
+    break if closed? || (@recv_done && @streams_ctx.none_half_closed_remote?)
 
     case @port.receive
     in :eof
@@ -111,11 +116,12 @@ def select_loop(io)
     in [:response, res, stream_id]
       handle_response(io, res, stream_id)   # ストリームからのレスポンスを送信
     end
-
-    break if closed?
   end
 end
 ```
+
+終了条件（main `60df001` 以降）: GOAWAY などで閉じたとき、または EOF を受け取った後にレスポンス待ちのストリームがなくなったとき。
+v0.0.15〜`7359e96` は `break if @recv_done && @streams_ctx.empty?` だったが、閉じたストリームも `@streams_ctx` に残るので、peer が切断しても終わらなかった。
 
 受信フレームとレスポンスが 1 本のポートに FIFO で並ぶので、到着順に処理される。
 C 実装の側では `ractor_selector__wait`（毎 wakeup で全ポートを走査）を通らなくなり、
@@ -136,7 +142,11 @@ def initialize(tx, stream_id, proc)
       rescue StandardError => e
         res = HTTP::Response.internal_server_error
       end
-      tx.send([:response, res, stream_id], move: true)
+      begin
+        tx.send([:response, res, stream_id], move: true)
+      rescue Ractor::ClosedError
+        # Connection がすでに終わっていたら、レスポンスは捨てる（main 60df001 以降）
+      end
     end
   end
 end
@@ -145,7 +155,7 @@ end
 この Ractor は：
 1. `Ractor.recv` でリクエストを受け取る
 2. ユーザー定義の proc を実行
-3. Connection と共有する `Ractor::Port`（`tx` = Connection の `@port`）でレスポンスを送信
+3. Connection と共有する `Ractor::Port`（`tx` = Connection の `@port`）でレスポンスを送信。Connection が先に終わっていれば捨てる
 4. 終了（プールなし、1リクエスト1生成）
 
 ## 同時 Ractor 数の計算

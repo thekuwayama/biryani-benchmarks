@@ -47,7 +47,7 @@
 ## Ractor 内部実装
 
 - [internals/ractor-overview](internals/ractor-overview.md) — Ractor 全体像（OS マッピング・ライフサイクル・共有モデル・API）
-- [internals/biryani-ractor-architecture](internals/biryani-ractor-architecture.md) — biryani の Ractor 構造（接続 + recv_loop + ストリームごと生成）。main `7359e96` の IO move 渡しと lingering close
+- [internals/biryani-ractor-architecture](internals/biryani-ractor-architecture.md) — biryani の Ractor 構造（接続 + recv_loop + ストリームごと生成）。main `c417f0f` の IO move 渡し・lingering close・peer 切断時の Connection 終了
 - [internals/ractor-port-implementation](internals/ractor-port-implementation.md) — Ractor::Port の C 実装（recv_queue 二段キュー）
 - [internals/ractor-sync-wakeup](internals/ractor-sync-wakeup.md) — wakeup メカニズム精査（Win32 vs pthread 分岐・M:N スケジューラの実際のパス）
 - [internals/ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md) — **Q5 解答**: SNT ライフサイクルと補充ロジック（thread_create_core ~10% の真因）
