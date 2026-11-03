@@ -213,3 +213,18 @@ Stream Ractor をプール化すると、**4.0.5 でもスループットが約 
 これが ruby/ruby 側で減らせるなら、使い捨て型の Ractor の利用（biryani の現在の設計）全般が速くなる。
 
 関連: [findings/ractor-pool-feasibility](../findings/ractor-pool-feasibility.md)
+
+### Q10: 4.1.0-preview1 の `[BUG] cannot create a new page after major GC` はどの経路で起きるのか（→ 未着手）
+
+4.1.0-preview1 で biryani に `-n10000 -c50 -m100` をかけると、10 回中 2 回、`heap_prepare` の `rb_bug` でプロセスが落ちた（[findings/gc-cannot-create-page-after-major-gc](../findings/gc-cannot-create-page-after-major-gc.md)）。
+OOM ではなく、2 回の GC の後も objspace の `allocatable_bytes` が 0 のまま、再利用できる空きページもなかった。
+上流はグローバル GC 後に予算 0 で残る objspace を手当てしている（`default.c:9873-9891`）が、それ以外の経路が残っているとみられる。
+
+**確認したいこと**:
+- 落ちる直前の objspace の状態（`allocatable_bytes`・`empty_pages_count`・直前の GC がローカルかグローバルか）
+- biryani なしの最小再現（Ractor を作っては捨てながら、各 Ractor でオブジェクトを確保し続ける）で再現するか
+- 上流 master の先頭でも起きるか、既出の報告があるか
+
+再現と原因が固まれば、4.1.0 のリリース前に報告する価値が高い（preview で見つかったクラッシュ）。
+
+関連: [findings/per-ractor-gc-ractor-churn-cost](../findings/per-ractor-gc-ractor-churn-cost.md)

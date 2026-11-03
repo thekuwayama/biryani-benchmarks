@@ -14,7 +14,10 @@
 - `raw/ruby-src` を master `17aeb89200` → **v4.1.0-preview1（`2d08b5f42f`）**に更新した。間は 36 コミットで、Ractor・スケジューラ・GC 関連のファイルには差分がない。そのため、permalink（113 件）はハッシュだけを置き換えた。CLAUDE.md の基準コミットも更新した
 - IO のコピー不可は preview1 にそのまま入り、NEWS にも載っていない → findings / contributions の `ractor-io-copy-regression` に追記
 - 動作確認（4.1.0-preview1）: `server_c25_m50`・`bench_ruby_max_cpu`・`bench_cpu_bound`・`bench_compare_rubies`（毎回サーバーを起動し直すもの）は全件成功した。4.0.5 では `server_c25_m50`・`bench_c`（下記の `-c1` / `-c5` を除く）とも全件成功した
+- **問題 1（OOM）**: 1 プロセスで run を続けて流す `bench_c` / `bench_m` は、4.1.0-preview1 では RSS 3.6 GB で OOM killer に kill される。`server_c25_m50` の最大 RSS は preview1 2.20 GB / master 2.20 GB / 4.0.5 96 MB で、biryani の更新では変わっていない → `findings/per-ractor-gc-ractor-churn-cost.md` §3 に追記
+- **問題 2（クラッシュ）**: `bundle exec rake load`（`-c50 -m100`）が、10 回中 2 回 `[BUG] cannot create a new page after major GC` で落ちた。OOM ではなく、objspace の `allocatable_bytes` が 0 のまま残っている → `findings/gc-cannot-create-page-after-major-gc.md`（新規）、Q10、contributions/README の「調査中」に追加
 - 今回の変更とは関係なく、以前からある問題: `bench_c` の `-c1` / `-c5` は `-t10` が `-c` より大きいので h2load が起動しない。`.rubocop.yml` が `raw/` を除外していないため、`bundle exec rubocop` が `raw/ruby-src` 全体を走査し、6 分以上かかった（途中で止めた）
+- 次のステップ: Q10。biryani なしの最小再現を作り、`heap_prepare` に入った時点の `allocatable_bytes`・`empty_pages_count`・直前の GC の種類を調べる。上流 master の先頭でも起きるかも確かめる
 
 ---
 

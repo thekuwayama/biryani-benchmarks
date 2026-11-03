@@ -1,5 +1,6 @@
 ---
 date: 2026-10-11
+updated: 2026-11-03
 tags: [finding]
 ---
 
@@ -98,6 +99,10 @@ biryani ではリクエスト処理中の absorb は少なく、ほとんどが�
 - absorb 修正を入れても RSS は変わらない（別の問題）
 - biryani（`-n10000`）では最大 RSS が 2.2 GB になり、perf のバッファ（512 MB）を足すと 4 GB の VM で OOM になった
 - 仮説（未検証）: biryani では main Ractor が `system("h2load")` でブロックしているため、main で実行される disowned zombie 吸収の postponed job が h2load の終了まで進まない。その間、zombie の objspace が溜まり続ける
+- **2026-11-03（4.1.0-preview1 + biryani main `7359e96`）**: `load/server_c25_m50.rb`（`-n10000`）の最大 RSS は 4.1.0-preview1 で 2.20 GB、master `17aeb89200` で 2.20 GB、4.0.5 で 96 MB だった（biryani の更新では変わらない）。
+  1 プロセスで 10,000 リクエストの h2load を続けて流す `load/bench_c.rb` は、2 回目の run の途中で anon-rss 3.6 GB に達し、**3 回中 3 回とも OOM killer に kill された**。`load/bench_m.rb` も途中から失敗した。
+  1 回目の run のメモリが返りきらないまま 2 回目に入っている。4.1 を既定にした今、サーバーを使い回すスクリプトは 4 GB の VM では使えない
+- 同じ条件（`-c50 -m100`）で、OOM ではなく `[BUG] cannot create a new page after major GC` で落ちることもある → [findings/gc-cannot-create-page-after-major-gc](gc-cannot-create-page-after-major-gc.md)
 
 ### 4. プール化で回避できる
 
