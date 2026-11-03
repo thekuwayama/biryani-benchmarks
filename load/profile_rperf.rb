@@ -12,10 +12,7 @@ M    = 50
 T    = 10
 OUT  = ENV['RPERF_OUT'] || '/biryani-benchmarks/raw/rperf_c25_m50_wall.json.gz'
 
-# Ruby master では IO を Ractor にコピーで渡せないため、TCPServer は Ractor 内で開く。
-# BIRYANI_IO_MOVE_SHIM=1 で biryani の IO 受け渡しを move に差し替える（load/ractor_io_move_shim.rb）。
-require_relative 'ractor_io_move_shim' if ENV['BIRYANI_IO_MOVE_SHIM'] == '1'
-
+# Ruby 4.1 では IO を Ractor にコピーで渡せないため、TCPServer は Ractor 内で開く。
 Ractor.new do
   s = TCPServer.open(PORT)
   server = Biryani::Server.new(

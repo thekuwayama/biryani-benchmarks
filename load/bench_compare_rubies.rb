@@ -21,13 +21,10 @@ T      = 10
 CPUS   = (ENV['CPUS'] || 'unset,4,8').split(',').map { |s| s == 'unset' ? nil : Integer(s) }.freeze
 REPEAT = Integer(ENV['REPEAT'] || 3)
 
-# Ruby master では IO を Ractor にコピーで渡せないため、TCPServer は Ractor 内で開く。
-# BIRYANI_IO_MOVE_SHIM=1 のときは biryani の IO 受け渡しを move に差し替える
-# （load/ractor_io_move_shim.rb。master で biryani 0.0.15 を動かすのに必要）。
+# Ruby 4.1 では IO を Ractor にコピーで渡せないため、TCPServer は Ractor 内で開く。
 SERVER_SCRIPT = <<~RUBY
   require 'socket'
   require 'biryani'
-  require '#{File.expand_path('ractor_io_move_shim', __dir__)}' if ENV['BIRYANI_IO_MOVE_SHIM'] == '1'
   require '#{File.expand_path('ractor_pool_shim', __dir__)}' if ENV['BIRYANI_STREAM_POOL']
   Ractor.new do
     s = TCPServer.open(#{PORT})
@@ -65,7 +62,7 @@ def parse(out)
 end
 
 $stderr.puts "#{RUBY_DESCRIPTION}"
-$stderr.puts "-c#{C} -m#{M} -n#{N} -t#{T}, REPEAT=#{REPEAT}, BIRYANI_IO_MOVE_SHIM=#{ENV['BIRYANI_IO_MOVE_SHIM'] || '0'}, BIRYANI_STREAM_POOL=#{ENV['BIRYANI_STREAM_POOL'] || '-'}"
+$stderr.puts "-c#{C} -m#{M} -n#{N} -t#{T}, REPEAT=#{REPEAT}, BIRYANI_STREAM_POOL=#{ENV['BIRYANI_STREAM_POOL'] || '-'}"
 
 rows = []
 CPUS.each do |cpu|
