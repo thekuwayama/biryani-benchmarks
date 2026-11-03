@@ -5,7 +5,7 @@
 #
 # 実行方法:
 #   RBENV_VERSION=4.0.5 bundle exec ruby load/bench_compare_rubies.rb
-#   RBENV_VERSION=master-17aeb89200 bundle exec ruby load/bench_compare_rubies.rb
+#   RBENV_VERSION=4.1.0-preview1 bundle exec ruby load/bench_compare_rubies.rb
 # 環境変数:
 #   CPUS   カンマ区切り。"unset" は RUBY_MAX_CPU 未設定（デフォルト: unset,4,8）
 #   REPEAT 各条件の繰り返し回数（デフォルト: 3）

@@ -18,15 +18,17 @@ SERVER_SCRIPT = <<~RUBY
   require 'socket'
   require 'biryani'
   socket = TCPServer.open(#{PORT})
-  Ractor.new(socket) do |s|
+  # Ruby 4.1 では IO を Ractor にコピーで渡せないため、move で渡す
+  r = Ractor.new do
     server = Biryani::Server.new(
       Ractor.shareable_proc do |_, res|
         res.status = 200
         res.content = 'OK'
       end
     )
-    server.run(s)
+    server.run(Ractor.receive)
   end
+  r.send(socket, move: true)
   sleep
 RUBY
 

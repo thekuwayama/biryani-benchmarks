@@ -12,15 +12,17 @@ CS   = [1, 5, 10, 25, 50, 100].freeze
 
 socket = TCPServer.open(PORT)
 
-Ractor.new(socket) do |s|
+# Ruby 4.1 では IO を Ractor にコピーで渡せないため、move で渡す
+r = Ractor.new do
   server = Biryani::Server.new(
     Ractor.shareable_proc do |_, res|
       res.status = 200
       res.content = 'OK'
     end
   )
-  server.run(s)
+  server.run(Ractor.receive)
 end
+r.send(socket, move: true)
 
 CS.each do |c|
   $stderr.puts "\n=== -c#{c} ==="

@@ -4,7 +4,8 @@ RSpec.describe Biryani::Server do
   before do
     @tcpserver = TCPServer.open(PORT)
 
-    Ractor.new(@tcpserver) do |socket|
+    # Ruby 4.1 では IO を Ractor にコピーで渡せないため、dup を move で渡す（@tcpserver は after で閉じる）
+    r = Ractor.new do
       server = Biryani::Server.new(
         Ractor.shareable_proc do |_, res|
           res.status = 200
@@ -12,8 +13,9 @@ RSpec.describe Biryani::Server do
         end
       )
 
-      server.run(socket)
+      server.run(Ractor.receive)
     end
+    r.send(@tcpserver.dup, move: true)
   end
 
   after do
