@@ -17,6 +17,7 @@ biryani 0.0.15 を Ruby 4.0.5 と master `17aeb89200` で比べた。master は 
 - master は Lima VM 上で `17aeb89200` をビルド（4.0.5 と同じ configure: `--enable-shared --with-ext=openssl,psych,+ --disable-install-doc`、`-O3 -ggdb3`）
 - **IO move シム**: master では IO を Ractor にコピーで渡せない（[findings/ractor-io-copy-regression](../findings/ractor-io-copy-regression.md)）。
   そのため biryani の IO 受け渡しを move に差し替える `load/ractor_io_move_shim.rb` を、比較の公平さのため**両方の Ruby に**読み込んだ
+  （2026-11-03: biryani main `cac9ff9` に同じ変更が入ったので、シムは削除した。再現するときは biryani main を使えばシムは要らない）
 - スクリプト: `load/bench_compare_rubies.rb`（`RUBY_MAX_CPU` ごとに 3 回、毎回サーバーを起動し直す）
 - master の 4.0.5 との違いには `default_max_cpu`（4.0.5 は 8 固定、master は CPU 数 = 4）も含まれる。そのため `RUBY_MAX_CPU` を 4 と 8 に固定した場合も測った
 

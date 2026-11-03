@@ -2,7 +2,7 @@
 
 **ゴール**: ruby/ruby の Ractor にパフォーマンス関連のコントリビュートをする。
 
-最終更新: 2026-10-11（Stream Ractor のプール化を計測。master が 4.0.5 を上回った）
+最終更新: 2026-11-03（Ruby 4.1.0-preview1・biryani main `7359e96` に移行。`raw/ruby-src` も preview1 に更新）
 
 ---
 
@@ -38,7 +38,7 @@
 - [findings/rperf-concurrent-vs-parallel](findings/rperf-concurrent-vs-parallel.md) — rperf の計測モデル：各 Ractor 独立の並行計測であり、実時間（並列）の重複を含む
 - [findings/ractor-pool-feasibility](findings/ractor-pool-feasibility.md) — **Q3 解答**: Ractor プールは実装可能。当初は効果が限定的と予想したが、2026-10-11 の実測で 4.0.5 でも約 2.4 倍になり訂正
 - [findings/per-ractor-gc-ractor-churn-cost](findings/per-ractor-gc-ractor-churn-cost.md) — **Q8**: master の per-Ractor GC では Ractor ごとに objspace 生成・retire GC・absorb が走る。`objspace_absorb` に O(N²) の末尾探索
-- [findings/ractor-io-copy-regression](findings/ractor-io-copy-regression.md) — master では IO を Ractor にコピーで渡せない（4.0.x は `#clone` で動いた）。biryani 0.0.15 が動かない
+- [findings/ractor-io-copy-regression](findings/ractor-io-copy-regression.md) — master・4.1.0-preview1 では IO を Ractor にコピーで渡せない（4.0.x は `#clone` で動いた）。biryani 0.0.15 が動かない（main `cac9ff9` で move に変更済み）
 - [findings/snt-keep-seconds-disabled](findings/snt-keep-seconds-disabled.md) — `SNT_KEEP_SECONDS = 0` により SNT プールが実行時に縮小しない（`e98f95b4fd` 時点。上流で削除済み、retire に置き換え）
 
 ---
@@ -46,7 +46,7 @@
 ## Ractor 内部実装
 
 - [internals/ractor-overview](internals/ractor-overview.md) — Ractor 全体像（OS マッピング・ライフサイクル・共有モデル・API）
-- [internals/biryani-ractor-architecture](internals/biryani-ractor-architecture.md) — biryani の Ractor 構造（接続 + recv_loop + ストリームごと生成）
+- [internals/biryani-ractor-architecture](internals/biryani-ractor-architecture.md) — biryani の Ractor 構造（接続 + recv_loop + ストリームごと生成）。main `7359e96` の IO move 渡しと lingering close
 - [internals/ractor-port-implementation](internals/ractor-port-implementation.md) — Ractor::Port の C 実装（recv_queue 二段キュー）
 - [internals/ractor-sync-wakeup](internals/ractor-sync-wakeup.md) — wakeup メカニズム精査（Win32 vs pthread 分岐・M:N スケジューラの実際のパス）
 - [internals/ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md) — **Q5 解答**: SNT ライフサイクルと補充ロジック（thread_create_core ~10% の真因）
@@ -70,7 +70,7 @@
 
 - [contributions/default-max-cpu-cpu-count](contributions/default-max-cpu-cpu-count.md) — **★ マージ済み（e98f95b4fd）**: `default_max_cpu=8` → 物理 CPU 数に変更（I/O +3.1%・CPU +5.5%）
 - [contributions/objspace-absorb-free-pages-tail](contributions/objspace-absorb-free-pages-tail.md) — **候補（PR）**: `objspace_absorb` の free page 連結を O(N²) → O(src) に（実験ビルドで効果確認済み）
-- [contributions/ractor-io-copy-regression](contributions/ractor-io-copy-regression.md) — **候補（issue）**: master で IO を Ractor にコピーで渡せなくなった
+- [contributions/ractor-io-copy-regression](contributions/ractor-io-copy-regression.md) — **候補（issue）**: master で IO を Ractor にコピーで渡せなくなった（4.1.0-preview1 に入り、NEWS に記載なし）
 - [contributions/snt-replenishment-overhead](contributions/snt-replenishment-overhead.md) — **調査中**: SNT 補充の頻繁な pthread_create を削減（CPU ~10%）。縮小側は上流で実装済み、master で再計測待ち
 
 ### クローズ済み

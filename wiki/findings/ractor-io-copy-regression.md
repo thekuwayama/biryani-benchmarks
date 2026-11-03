@@ -1,6 +1,6 @@
 ---
 date: 2026-10-11
-updated: 2026-10-11
+updated: 2026-11-03
 tags: [finding]
 ---
 
@@ -9,6 +9,9 @@ tags: [finding]
 Ruby master `17aeb89200` では、`Ractor.new(io)` や `port.send(io)` のように IO（`TCPServer` / `TCPSocket` など）を**コピーで**
 Ractor に渡すと `Ractor::Error: can not copy TCPServer object.` になる。Ruby 4.0.5 では同じコードが動く。
 `move: true` で渡す場合は両方で動く。biryani 0.0.15 は 2 か所で IO をコピーで渡しているため、**master では 1 リクエストも処理できない**。
+
+> **2026-11-03 追記**: この挙動は **Ruby 4.1.0-preview1（`2d08b5f42f`、2026-10-11）にもそのまま入った**（Lima VM で上の再現コードを実行して確認）。
+> preview1 の NEWS にも記載はない。biryani 側は main `cac9ff9` で IO を move で渡すように直したので、biryani はシムなしで 4.1 でも動く（下記）。
 
 ## 詳細
 
@@ -55,6 +58,9 @@ biryani 0.0.15 は次の 2 か所で IO をコピーで渡している。
 - `connection.rb` の `recv_loop`: `Ractor.new(io, @port)`（`io` は `serve` 内で `io.clone` したもの）
 
 ベンチマークでは、この 2 か所を move に差し替えるシム（`load/ractor_io_move_shim.rb`）を 4.0.5 と master の両方に読み込んで比較した（→ [scenarios/ruby-master-vs-405](../scenarios/ruby-master-vs-405.md)）。
+
+**2026-11-03**: biryani main `cac9ff9`（「fix: move IO to Ractors instead of copying」）で、`Server#run` と `recv_loop` がどちらも IO を `send(io, move: true)` で渡すようになった。
+シムと同じ形なので、`raw/biryani` を main `7359e96` に更新したのに合わせてシムは削除した（git 履歴には残っている）。
 同じ理由で、ベンチマークスクリプト側の `Ractor.new(socket)` も、TCPServer を Ractor 内で開く形に変えた。
 
 ## 関連ページ

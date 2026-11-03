@@ -6,6 +6,10 @@ status: 候補
 
 # master で IO を Ractor にコピーで渡せなくなった（4.0.x では動く）
 
+> **2026-11-03 追記**: この挙動は **Ruby 4.1.0-preview1 にそのまま入った**（Lima VM で確認）。preview1 の NEWS にも記載がない。
+> biryani は main `cac9ff9` で IO を move で渡すように直したので、biryani への実害はなくなった。
+> 一方で、IO をコピーで渡している他のライブラリは 4.1 で同じように壊れる。4.1.0 のリリース前に、意図的かどうか（NEWS に載せるべきか）を確かめる価値は増している。
+
 ## 問題・提案
 
 Ruby 4.0.x では `Ractor.new(io)` / `port.send(io)`（コピー）で IO を Ractor に渡せた（`#clone` で fd が dup される）。
@@ -20,7 +24,7 @@ issue として確認したいこと:
 ## 根拠（ベンチマーク・プロファイラ結果へのリンク）
 
 - 再現コードと原因: [findings/ractor-io-copy-regression](../findings/ractor-io-copy-regression.md)
-- 実害の例: biryani 0.0.15（`server.rb` の `Ractor.new(socket.accept, @proc)`、`connection.rb` の `Ractor.new(io, @port)`）が master で 1 リクエストも処理できない
+- 実害の例: biryani 0.0.15（`server.rb` の `Ractor.new(socket.accept, @proc)`、`connection.rb` の `Ractor.new(io, @port)`）が master で 1 リクエストも処理できない（biryani main `cac9ff9` で move に変更済み）
 
 ## 関連する ruby/ruby のコード
 
@@ -36,4 +40,4 @@ issue として確認したいこと:
 
 1. 変化を起こしたコミットをビルドして確かめる（コード上は `d549b394dc` で壊れている。その直前と直後で `Ractor.new(io)` を試す）
 2. bugs.ruby-lang.org と [Feature #22227](https://redmine.ruby-lang.org/issues/22227) で既出かを確認する（2026-10-11 時点では、#22227 の議論に IO のコピーへの言及はなかった）
-3. 意図的な変更なら、biryani 側で IO を move で渡すよう直す（biryani はユーザーのリポジトリ）
+3. ~~意図的な変更なら、biryani 側で IO を move で渡すよう直す~~ → 意図の確認を待たずに、biryani main `cac9ff9` で move に変更した（2026-11-03）

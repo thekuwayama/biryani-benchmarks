@@ -1,6 +1,6 @@
 ---
 date: 2026-05-17
-updated: 2026-10-11
+updated: 2026-11-03
 tags: [internals]
 ---
 
@@ -12,6 +12,11 @@ biryani のソースコード（`lib/biryani/server.rb`, `connection.rb`, `strea
 > Connection Ractor の待ち受けが **`Ractor.select(@sock, @streams_ctx.tx)` から、単一の `Ractor::Port`（`@port`）に対する `Port#receive` に変わった**。
 > recv_loop と Stream Ractor はどちらも同じ `@port` に送り、Connection は先頭のタグ（`:frame` / `:response` / `:eof`）で振り分ける。
 > 本ページの記述は v0.0.15 に合わせて更新した。`Ractor.select` を前提とする計測（rperf の `Ractor.select` 33.5% など）は v0.0.12 時点のもの。
+>
+> **2026-11-03 更新（`raw/biryani` を v0.0.15 → main `7359e96` に更新）**: v0.0.15 以降の main に 2 つの変更が入った（バージョンは 0.0.15 のまま）。
+> - `cac9ff9`: IO を Ractor に**コピーではなく move で**渡すようになった（Ruby 4.1 では IO をコピーで渡せないため。→ [findings/ractor-io-copy-regression](../findings/ractor-io-copy-regression.md)）。
+>   ベンチマーク用に入れていた IO move シム（`load/ractor_io_move_shim.rb`）と同じ内容なので、シムは削除した
+> - `15154b8`: recv_loop が lingering close をするようになった（下記）
 
 ## Ractor の構造
 
@@ -32,16 +37,21 @@ Server#run（ループ）
 ```ruby
 def run(socket)
   loop do
-    Ractor.new(socket.accept, @proc) do |io, proc|
+    io = socket.accept
+    r = Ractor.new(@proc) do |proc|
+      io_ = Ractor.receive
       conn = Connection.new(proc)
-      conn.serve(io)
-      io.close
+      conn.serve(io_)
+    ensure
+      io_&.close
     end
+    r.send(io, move: true)
   end
 end
 ```
 
 TCP 接続を `accept` するたびに 1 つの Ractor を生成する。この Ractor が接続の全ライフサイクルを担う。
+accept した IO は、生成した Ractor に `send(io, move: true)` で渡す（v0.0.15 までは `Ractor.new(socket.accept, @proc)` でコピーしていた）。
 
 ### Connection（`connection.rb`）
 
@@ -49,20 +59,43 @@ TCP 接続を `accept` するたびに 1 つの Ractor を生成する。この 
 
 **recv_loop** — フレーム受信専用の Ractor を 1 つ追加生成：
 ```ruby
-def recv_loop(io)
-  Ractor.new(io, @port) do |io_, port_|
+def recv_loop(io)          # serve から recv_loop(io.clone) で呼ばれる
+  r = Ractor.new(@port) do |port_|
+    io_ = Ractor.receive
+    eof = false
     loop do
       obj = Frame.read(io_)
       if obj.nil?
+        eof = true
         port_.send(:eof, move: true)
         break
       end
 
       port_.send([:frame, obj], move: true)
     end
+
+    # Lingering close
+    unless eof
+      begin
+        Timeout.timeout(LINGER_TIMEOUT) do   # LINGER_TIMEOUT = 5
+          loop { io_.readpartial(16_384) }
+        end
+      rescue IOError, SystemCallError, Timeout::Error
+      end
+    end
+  ensure
+    io_&.close
   end
+  r.send(io, move: true)
 end
 ```
+
+**lingering close**（main `15154b8`）: Connection Ractor が先に終わると `@port` が閉じ、`port_.send` が `Ractor::ClosedError` を投げる。
+`Ractor::ClosedError` は `StopIteration` のサブクラスなので `loop` が黙って抜け、`eof` が false のまま後半に進む。
+そこで相手が閉じるまで（最大 5 秒）受信データを読み捨ててから close する。未読データを残して close すると RST が飛ぶので、それを避けるためである。
+4.1.0-preview1 同梱の timeout 0.6.1 は、状態を Ractor ごとに持つ（[`Timeout::State.instance`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/lib/timeout.rb#L66-L74)（`lib/timeout.rb:66`）が `Ractor.store_if_absent` を使う）。
+そのため lingering に入った recv_loop Ractor では、`Timeout.timeout` がその Ractor 用のタイムアウトスレッドを 1 つ作る。
+h2load のように `-c` 本の接続を最後まで使い回す負荷では、lingering に入るのは終了時の各接続 1 回だけで、スループットへの影響は小さいはず（未計測）。
 
 **select_loop** — 単一の `@port` から `Port#receive` で受け取り、タグで振り分ける（v0.0.14 以降）：
 ```ruby
@@ -125,6 +158,7 @@ end
 | **合計** | **c × (m + 2)** |
 
 ベースライン（`-c50 -m100`）では最大 **50 × 102 = 5,100 Ractor（= OS スレッド）** が同時に存在する。
+main `15154b8` 以降は、Connection Ractor が終わった後も recv_loop Ractor が lingering close で最大 5 秒残ることがある。
 
 ## FlameGraph との対応
 

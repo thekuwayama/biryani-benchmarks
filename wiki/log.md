@@ -4,6 +4,20 @@
 
 ---
 
+## [2026-11-03] maintenance | biryani main・Ruby 4.1.0-preview1・raw/ruby-src preview1 に更新
+
+- `raw/biryani` を v0.0.15（`7535a4b`）→ main `7359e96`（2026-11-03）に更新した。`cac9ff9` で IO を Ractor に move で渡すようになり、`15154b8` で recv_loop が lingering close をするようになった（バージョンは 0.0.15 のまま）
+  - IO move シム（`load/ractor_io_move_shim.rb`、`BIRYANI_IO_MOVE_SHIM`）は biryani 本体と同じ内容になったので削除した。読み込むと lingering close が消えてしまうため
+- `.ruby-version` を 4.0.5 → **4.1.0-preview1** にした。Lima VM の ruby-build を更新してビルドした（configure・`-O3 -ggdb3` は 4.0.5 と同じ。違いは `--disable-install-doc` の有無だけ）
+  - Gemfile.lock の `BUNDLED WITH` を 4.0.7 → 4.1.0.beta3 にした。bundler 4.0.7 は、Ruby 4.1 の pathname に `Pathname::SEPARATOR_PAT` がないため `bundle install` で落ちる。4.1.0.beta3 は 4.0.5 でも動く
+  - `Ractor.new(socket)` で IO をコピーしていた load スクリプト 5 本（`bench_c` / `bench_m` / `bench_cpu_bound` / `bench_ruby_max_cpu` / `server_spec`）を move で渡す形にした
+- `raw/ruby-src` を master `17aeb89200` → **v4.1.0-preview1（`2d08b5f42f`）**に更新した。間は 36 コミットで、Ractor・スケジューラ・GC 関連のファイルには差分がない。そのため、permalink（113 件）はハッシュだけを置き換えた。CLAUDE.md の基準コミットも更新した
+- IO のコピー不可は preview1 にそのまま入り、NEWS にも載っていない → findings / contributions の `ractor-io-copy-regression` に追記
+- 動作確認（4.1.0-preview1）: `server_c25_m50`・`bench_ruby_max_cpu`・`bench_cpu_bound`・`bench_compare_rubies`（毎回サーバーを起動し直すもの）は全件成功した。4.0.5 では `server_c25_m50`・`bench_c`（下記の `-c1` / `-c5` を除く）とも全件成功した
+- 今回の変更とは関係なく、以前からある問題: `bench_c` の `-c1` / `-c5` は `-t10` が `-c` より大きいので h2load が起動しない。`.rubocop.yml` が `raw/` を除外していないため、`bundle exec rubocop` が `raw/ruby-src` 全体を走査し、6 分以上かかった（途中で止めた）
+
+---
+
 ## [2026-10-11] benchmark | Stream Ractor のプール化（4.0.5 / master）
 
 - `load/ractor_pool_shim.rb` を追加。biryani の Stream Ractor を、使い回すワーカーのプールに実行時に差し替える（`raw/biryani` は変更しない）

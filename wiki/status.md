@@ -1,6 +1,6 @@
 ---
 date: 2026-05-23
-updated: 2026-10-11
+updated: 2026-11-03
 tags: [status]
 ---
 
@@ -25,7 +25,7 @@ Connection Ractor（接続ごと）
         Stream Ractor（ストリームごと）— proc.call → @port に [:response, res, stream_id] を送信
 ```
 
-biryani v0.0.14 以降の構成（`raw/biryani` は v0.0.15）。v0.0.12 までは `Ractor.select(@sock, @streams_ctx.tx)` で 2 つのポートを待っていた。
+biryani v0.0.14 以降の構成（`raw/biryani` は main `7359e96`。v0.0.15 に、IO を move で渡す変更と recv_loop の lingering close を加えたもの）。v0.0.12 までは `Ractor.select(@sock, @streams_ctx.tx)` で 2 つのポートを待っていた。
 
 詳細: [internals/biryani-ractor-architecture](internals/biryani-ractor-architecture.md)
 
@@ -50,6 +50,10 @@ biryani v0.0.14 以降の構成（`raw/biryani` は v0.0.15）。v0.0.12 まで�
 **IO を move で渡すシムで動かすと、4.0.5 の約 43% に落ちる**: per-Ractor GC で Ractor 1 つごとに objspace の生成・retire GC・absorb が走り、Ractor を使い捨てる biryani はリクエストごとにそのコストを払う。
 **Stream Ractor をプール化すると逆転する**: master 20,754 req/s、4.0.5 18,641 req/s。4.0.5 でも約 2.4 倍になるので、Ractor の使い捨てそのものがどちらの Ruby でも主要なコストだった → [scenarios/stream-ractor-pool](scenarios/stream-ractor-pool.md)
 → [scenarios/ruby-master-vs-405](scenarios/ruby-master-vs-405.md)、[findings/per-ractor-gc-ractor-churn-cost](findings/per-ractor-gc-ractor-churn-cost.md)、[findings/ractor-io-copy-regression](findings/ractor-io-copy-regression.md)
+
+**2026-11-03: Ruby 4.1.0-preview1 に移行**: preview1（`2d08b5f42f`）は master `17aeb89200` の 36 コミット後で、Ractor・スケジューラ・GC のコードは同じ。IO をコピーで渡せない挙動もそのまま入った。
+biryani は main `cac9ff9` で IO を move で渡すようになり、シムなしで 4.1 でも動く。ベンチマークの既定 Ruby（`.ruby-version`）は 4.1.0-preview1 にした。
+上の master の数値は preview1 でもほぼ同じになるはずだが、biryani main（lingering close を含む）との組み合わせでは**まだ計測していない**。
 
 ---
 
@@ -106,7 +110,7 @@ Ruby 3.3+ の非 main Ractor は M:N スケジューラを使用。M Ruby スレ
 - デフォルト SNT 上限: `default_max_cpu` = CPU 数（`sysconf(_SC_NPROCESSORS_ONLN)`、オンラインの論理 CPU 数）。e98f95b4fd（2026-06-06）でマージ済み。4.0.x（4.0.7 まで）には入っておらず、master のみ。変更前は固定値 8
 - `IO#read` → dedicated SNT 取得 → `snt_cnt--` → `native_thread_check_and_create_shared` で補充
 - ブロック中の Ractor は SNT を解放して休眠（M:N の恩恵）
-- **上流 master（`17aeb89200`、2026-10-10）での変化**: スケジューラは `thread_sched.c` / `thread_sched_mn.c` に移った。余った SNT は retire するようになり（`43793ca21a`、`SNT_KEEP_SECONDS` は削除）、タイムアウト付き待ちはタイマーホイール化され、I/O 待ちは `EPOLLONESHOT` 化された。per-Ractor GC も入った。上の CPU 内訳は Ruby 4.0.2 での計測なので、master での再計測が必要 → [internals/upstream-scheduler-changes-2026](internals/upstream-scheduler-changes-2026.md)
+- **上流 master（`17aeb89200`、2026-10-10。4.1.0-preview1 も同じ）での変化**: スケジューラは `thread_sched.c` / `thread_sched_mn.c` に移った。余った SNT は retire するようになり（`43793ca21a`、`SNT_KEEP_SECONDS` は削除）、タイムアウト付き待ちはタイマーホイール化され、I/O 待ちは `EPOLLONESHOT` 化された。per-Ractor GC も入った。上の CPU 内訳は Ruby 4.0.2 での計測なので、master での再計測が必要 → [internals/upstream-scheduler-changes-2026](internals/upstream-scheduler-changes-2026.md)
 
 詳細: [internals/ractor-mn-snt-lifecycle](internals/ractor-mn-snt-lifecycle.md)
 

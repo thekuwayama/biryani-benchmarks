@@ -16,6 +16,7 @@ master では、per-Ractor GC のコスト（Ractor ごとの objspace 生成・
 
 - Lima VM（aarch64、4 CPU、4 GB）、`h2load -c25 -m50 -t10`、`RUBY_MAX_CPU` は未設定
 - 両方の Ruby に IO move シム（`BIRYANI_IO_MOVE_SHIM=1`）を入れた。理由は [scenarios/ruby-master-vs-405](ruby-master-vs-405.md) を参照
+  （2026-11-03: biryani main `cac9ff9` に同じ変更が入ったので、シムと環境変数は削除した）
 - **プールのシム** `load/ractor_pool_shim.rb`（`BIRYANI_STREAM_POOL=<ワーカー数>`）: `Biryani::Stream#initialize` を実行時に上書きする（`raw/biryani` は変更しない）
   - main Ractor が起動時にワーカーを N 個作り、shareable な定数に置く。ワーカーは `loop { Ractor.receive → proc.call → tx.send }` を続け、終了しない
   - Connection からの `rx.send(req, move: true)` を、ランダムに選んだワーカーへの `[req, stream_id, tx, proc]` の送信に置き換える
