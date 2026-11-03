@@ -30,7 +30,12 @@ module Biryani
               res = HTTP::Response.internal_server_error
             end
 
-            tx.send([:response, res, stream_id], move: true)
+            begin
+              tx.send([:response, res, stream_id], move: true)
+            rescue Ractor::ClosedError
+              # 接続側の Ractor がすでに終わっていたら、レスポンスは捨てる。
+              # Ractor::ClosedError は StopIteration のサブクラスなので、捕まえないと loop を抜けてワーカーが止まる
+            end
           end
         end
       end
