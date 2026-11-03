@@ -23,15 +23,15 @@ biryani はストリームごとに Ractor を使い捨てるので、これが�
 
 | 関数 | 回数 | Ractor あたり |
 |---|---|---|
-| [`rb_gc_impl_objspace_alloc`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/gc/default/default.c#L13350-L13360) | 10,055 | 1 |
-| [`rb_gc_impl_objspace_retire_gc`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/gc/default/default.c#L8685-L8707) | 10,053 | 1 |
-| [`objspace_absorb`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/gc/default/default.c#L9996-L10233) | 10,053 | 1 |
+| [`rb_gc_impl_objspace_alloc`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/gc/default/default.c#L13350-L13360) | 10,055 | 1 |
+| [`rb_gc_impl_objspace_retire_gc`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/gc/default/default.c#L8685-L8707) | 10,053 | 1 |
+| [`objspace_absorb`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/gc/default/default.c#L9996-L10233) | 10,053 | 1 |
 | `gc_start` | 10,200 | ≈ 1（ほぼすべて retire GC） |
 | `heap_page_allocate_and_initialize` | 31,041 | ≈ 3 |
 | `gc_sweep_page` | 407,699 | ≈ 40 |
 
 10,000 リクエスト = 10,000 個の Stream Ractor（+ 接続ごとの Connection / recv_loop 各 25）。
-retire GC は、終了するスレッドが自分の objspace に対して `GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_SWEEP` の GC を行うもの（[`ractor.c:755`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor.c#L755) の `rb_gc_objspace_postmortem_self` 経由）。
+retire GC は、終了するスレッドが自分の objspace に対して `GPR_FLAG_FULL_MARK | GPR_FLAG_IMMEDIATE_SWEEP` の GC を行うもの（[`ractor.c:755`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/ractor.c#L755) の `rb_gc_objspace_postmortem_self` 経由）。
 deferred zombie を片付けた場合は 2 回目の GC も走る。
 
 absorb 修正後の FlameGraph で上位に来るのは、この処理の中身である。
@@ -46,7 +46,7 @@ Ractor 生成時の空ヒープの確保・初期化と、終了時の sweep が
 ### 2. `objspace_absorb` の O(N²)
 
 absorb 前の master の FlameGraph では、`objspace_absorb` の self が ruby プロセスの 58.5% を占めた。
-`perf annotate` で見ると、そのサンプルの 99.6% が [`gc/default/default.c:10069`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/gc/default/default.c#L10066-L10072) の 1 行に集中していた。
+`perf annotate` で見ると、そのサンプルの 99.6% が [`gc/default/default.c:10069`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/gc/default/default.c#L10066-L10072) の 1 行に集中していた。
 
 ```c
 /* Append the free-page chain to the tail. */
@@ -60,13 +60,13 @@ absorb のたびに、吸収する側（dst）の `free_pages` 連結リスト�
 absorb するたびに dst のリストは src の分だけ伸びるので、N 回の absorb で O(N²) になる。
 命令レベルでは 93% が `free_next` のロード 1 命令（ポインタチェイスのキャッシュミス）だった。この行は `85e3df9eaa`（2026-08-01、per-Ractor GC 本体）で入った。
 
-absorb は次の 3 か所で起きる（[`gc.c:4693-4797`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/gc.c#L4693-L4797)）。
+absorb は次の 3 か所で起きる（[`gc.c:4693-4797`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/gc.c#L4693-L4797)）。
 
 | 経路 | いつ | 吸収先 |
 |------|------|-------|
 | `rb_gc_objspace_absorb_into_current` | `Ractor#value` で join したとき | join した Ractor |
 | `objspace_absorb_disowned_zombies` | join されないまま Ractor オブジェクトが回収されたとき（postponed job） | main Ractor |
-| `rb_gc_objspace_absorb_all_zombies` | VM 終了時（[`ractor.c:1281`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor.c#L1281)） | main Ractor |
+| `rb_gc_objspace_absorb_all_zombies` | VM 終了時（[`ractor.c:1281`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/ractor.c#L1281)） | main Ractor |
 
 biryani は Stream Ractor を `value` しないので、2 番目と 3 番目の経路で main に集まる。
 

@@ -8,7 +8,7 @@ status: 候補
 
 ## 問題・提案
 
-per-Ractor GC（master `17aeb89200`）の [`objspace_absorb`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/gc/default/default.c#L10066-L10072)
+per-Ractor GC（master `17aeb89200`）の [`objspace_absorb`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/gc/default/default.c#L10066-L10072)
 は、終了した Ractor の objspace（src）を別の objspace（dst）に統合する。そのとき src の free page チェーンを
 **dst のチェーンの末尾**に付けるために、dst の連結リストを毎回先頭から辿っている。
 
@@ -55,10 +55,10 @@ if (sheap->free_pages) {
 
 | ファイル | 行 | 内容 |
 |----------|---|------|
-| [`gc/default/default.c`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/gc/default/default.c#L10066-L10072) | 10066-10072 | 問題の末尾探索 |
-| [`gc/default/default.c`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/gc/default/default.c#L9996-L10233) | 9996-10233 | `objspace_absorb` 全体 |
-| [`gc.c`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/gc.c#L4715-L4737) | 4715-4737 | `objspace_absorb_disowned_zombies`（main への吸収） |
-| [`gc.c`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/gc.c#L4774-L4797) | 4774-4797 | `rb_gc_objspace_absorb_all_zombies`（VM 終了時） |
+| [`gc/default/default.c`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/gc/default/default.c#L10066-L10072) | 10066-10072 | 問題の末尾探索 |
+| [`gc/default/default.c`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/gc/default/default.c#L9996-L10233) | 9996-10233 | `objspace_absorb` 全体 |
+| [`gc.c`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/gc.c#L4715-L4737) | 4715-4737 | `objspace_absorb_disowned_zombies`（main への吸収） |
+| [`gc.c`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/gc.c#L4774-L4797) | 4774-4797 | `rb_gc_objspace_absorb_all_zombies`（VM 終了時） |
 
 導入コミット: `85e3df9eaa`（2026-08-01、GC: per-Ractor local GC — GC engine）
 

@@ -10,7 +10,7 @@ status: クローズ
 > このページは commit `e98f95b4fd` 時点の分析で、コードへのリンクも同コミットのまま残している。
 > 提案していた 2 段階は、どちらも ko1 によって上流に入った。
 > - Step 1（retire する SNT の nt 解放）→ `dce74ebf04`（2026-08-13）「thread: free a shared native thread's resources when it retires」。
->   [`native_thread_destroy_self`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_pthread.c#L507-L515) が `native_thread_destroy` で nt / `nt_context` / altstack を解放する。
+>   [`native_thread_destroy_self`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_pthread.c#L507-L515) が `native_thread_destroy` で nt / `nt_context` / altstack を解放する。
 >   さらに、解放前に `sigaltstack(SS_DISABLE)` で altstack の登録を外している。解放から終了までの間にシグナルが来ると解放済み領域で走ってしまうためで、
 >   **この配慮は本ページの変更案にはなかった**。
 > - Step 2（縮小の有効化）→ `SNT_KEEP_SECONDS` は `1da2eea37c` で削除された。代わりに `43793ca21a` の `SNT_IDLE_RETIRE`（起こされても GRQ が空、が 3 回を超えて続いたら retire）が入った。

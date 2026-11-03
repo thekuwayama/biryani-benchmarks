@@ -10,7 +10,7 @@
 
 - [status](status.md) — 現時点の総合的理解とコントリビュート候補
 - [log](log.md) — セッションの時系列記録
-- [source-reading-guide](source-reading-guide.md) — ruby/ruby ソースコードの読み方ガイド（`17aeb89200` 基準）
+- [source-reading-guide](source-reading-guide.md) — ruby/ruby ソースコードの読み方ガイド（v4.1.0-preview1 `2d08b5f42f` 基準）
 - [contributions/README](contributions/README.md) — コントリビュート候補の一覧と判断基準
 
 ---

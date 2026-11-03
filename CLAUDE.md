@@ -14,7 +14,7 @@
 
 | パス | 種別 | 説明 |
 |-----|------|------|
-| `raw/ruby-src/` | リポジトリ | ruby/ruby master ソース（git submodule、commit `17aeb89200`） |
+| `raw/ruby-src/` | リポジトリ | ruby/ruby ソース（git submodule、タグ `v4.1.0-preview1` = commit `2d08b5f42f`） |
 | `raw/biryani/` | リポジトリ | biryani ソース（git submodule、Gemfile path: 参照） |
 | `raw/flamegraphs/flamegraph_<シナリオ>.svg` | 画像 | perf + FlameGraph による CPU プロファイル |
 | `raw/profiles/rperf_<シナリオ>_wall.json.gz` | データセット | rperf による Ruby レベル wall time プロファイル |
@@ -70,28 +70,28 @@ wiki ページに図が必要な場合は **Mermaid** を使う。ただし呼�
 
 wiki ページ内で ruby/ruby のソースファイルや行番号を引用するときは、**必ず GitHub permalink にリンクする**。
 
-ベース URL（サブモジュールのコミット `17aeb89200f13a392c645102800b68b9d16b926b` に固定）:
+ベース URL（サブモジュールのコミット `2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1` に固定）:
 
 ```
-https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/<ファイルパス>#L<行番号>
+https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/<ファイルパス>#L<行番号>
 ```
 
 | 形式 | 例 |
 |------|---|
-| 単一行 | `https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1491` |
-| 範囲 | `https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1858-L1881` |
+| 単一行 | `https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1491` |
+| 範囲 | `https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1858-L1881` |
 
 **Markdown での書き方**:
 
 ```markdown
 <!-- インライン参照 -->
-[`rb_ractor_sched_wakeup`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1491)（`thread_sched.c:1491`）
+[`rb_ractor_sched_wakeup`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1491)（`thread_sched.c:1491`）
 
 <!-- テーブルの「ファイル」列 -->
-| [`thread_sched.c`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1858-L1881) | 1858-1881 | 内容 |
+| [`thread_sched.c`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1858-L1881) | 1858-1881 | 内容 |
 
 <!-- ファイルヘッダ -->
-**[`ractor_sync.c`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_sync.c)**
+**[`ractor_sync.c`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/ractor_sync.c)**
 ```
 
 **例外**: コードブロック（` ``` ` ）内のコメントはリンク不可なのでそのまま。`log.md` や `questions/README.md` の流動的なメモも必須ではない。

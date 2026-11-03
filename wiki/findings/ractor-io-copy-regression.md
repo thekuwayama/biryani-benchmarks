@@ -38,8 +38,8 @@ r.send(TCPServer.new(0), move: true); r.value           # 両方: TCPServer
   - PR #18194 の設計説明には「copy は core 型を native copier で運び、ユーザーから見える `#clone` やフックは呼ばない。それ以外は Marshal」とある。`#clone` をやめたのは意図的だが、IO のコピーが失われることへの言及はない
   - `cd2ea9df6c` / `68447b1559`（2026-08-19）でコピーもヒープ外の courier に移り、`dea2cdac07`（2026-09-04）で Marshal フォールバックも削除された。IO が運べない状態は変わっていない
   - （2026-10-11 訂正: 当初は `68447b1559` で壊れたと推定していたが、誤りだった）
-- その結果、[`copy_courier_supported_p`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor.c#L3188) が T_FILE を拒否し、
-  [`ractor_prepare_payload`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_sync.c#L1114-L1137) が `can not copy` を投げる
+- その結果、[`copy_courier_supported_p`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/ractor.c#L3188) が T_FILE を拒否し、
+  [`ractor_prepare_payload`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/ractor_sync.c#L1114-L1137) が `can not copy` を投げる
 
 NEWS にはこの挙動変化の記載がない（IO については `80e57a11ca`「`Ractor.make_shareable(io)` が `Ractor::Error`」だけ）。
 IO をコピーで渡すテストもないため、意図的な変更か見落としかは分からない。

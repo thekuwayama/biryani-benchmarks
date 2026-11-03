@@ -26,8 +26,8 @@ issue として確認したいこと:
 
 | ファイル | 行 | 内容 |
 |----------|---|------|
-| [`ractor.c`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor.c#L3188) | 3188 | `copy_courier_supported_p`: hook のない T_FILE は `default:` で false |
-| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_sync.c#L1114-L1137) | 1114-1137 | `ractor_prepare_payload`: courier に載らなければ `can not copy` |
+| [`ractor.c`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/ractor.c#L3188) | 3188 | `copy_courier_supported_p`: hook のない T_FILE は `default:` で false |
+| [`ractor_sync.c`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/ractor_sync.c#L1114-L1137) | 1114-1137 | `ractor_prepare_payload`: courier に載らなければ `can not copy` |
 | `ractor.c`（`e98f95b4fd`） | — | 旧実装の `copy_enter` → `ractor_obj_clone`（IO は `#clone` で fd を dup） |
 
 関連コミット: `d549b394dc`（2026-08-01、per-Ractor GC 本体。コピーが `#clone` から native copier + Marshal に変わり、ここで IO が運べなくなった）、`cd2ea9df6c` / `68447b1559`（courier 化）、`dea2cdac07`（Marshal フォールバック削除）

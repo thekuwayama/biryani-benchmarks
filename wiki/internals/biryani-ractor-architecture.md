@@ -86,7 +86,7 @@ end
 
 受信フレームとレスポンスが 1 本のポートに FIFO で並ぶので、到着順に処理される。
 C 実装の側では `ractor_selector__wait`（毎 wakeup で全ポートを走査）を通らなくなり、
-通常の `Port#receive`（[`ractor_receive`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_sync.c#L1547)（`ractor_sync.c:1547`）→ `ractor_wait_receive`）で待つ形になる（[ractor-select-implementation](ractor-select-implementation.md) の議論は v0.0.12 向け）。
+通常の `Port#receive`（[`ractor_receive`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/ractor_sync.c#L1547)（`ractor_sync.c:1547`）→ `ractor_wait_receive`）で待つ形になる（[ractor-select-implementation](ractor-select-implementation.md) の議論は v0.0.12 向け）。
 
 ### Stream（`stream.rb`）
 

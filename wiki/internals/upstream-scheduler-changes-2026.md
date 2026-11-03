@@ -30,23 +30,23 @@ thread.c                           thread.c
 
 | 関数 | e98f95b4fd | 17aeb89200 |
 |------|-----------|-----------|
-| `rb_ractor_sched_wakeup` | `thread_pthread.c:1428` | [`thread_sched.c:1491`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1491) |
-| `rb_ractor_sched_wait` | `thread_pthread.c:1391` | [`thread_sched.c:1418`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1418) |
-| `ractor_sched_enq` / `ractor_sched_deq` | `thread_pthread.c:1290` / `:1332` | [`thread_sched.c:1302`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1302) / [`:1364`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1364) |
-| `native_thread_dedicated_inc` / `_dec` | `thread_pthread.c:1821` | [`thread_sched.c:1858`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1858) / [`:1884`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1884) |
-| `nt_start` | `thread_pthread.c:2366` 付近 | [`thread_sched.c:1978`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1978)（SNT のループは [`nt_shared_loop`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L2062) に分離） |
-| `native_thread_check_and_create_shared` | `thread_pthread_mn.c:408` | [`thread_sched_mn.c:932`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched_mn.c#L932) |
-| `thread_sched_wait_events` | `thread_pthread_mn.c` | [`thread_sched_mn.c:536`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched_mn.c#L536) |
-| `timer_thread_register_waiting` | `thread_pthread_mn.c:702` | [`thread_sched_mn.c:1464`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched_mn.c#L1464) |
-| `native_thread_create0`（`pthread_create`） | `thread_pthread.c:2185` | [`thread_pthread.c:791`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_pthread.c#L791) |
-| `default_max_cpu` | `thread_pthread.c:1802` | [`thread_sched.c:1838`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1838) + [`native_thread_default_max_cpu`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_pthread.c#L911) |
+| `rb_ractor_sched_wakeup` | `thread_pthread.c:1428` | [`thread_sched.c:1491`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1491) |
+| `rb_ractor_sched_wait` | `thread_pthread.c:1391` | [`thread_sched.c:1418`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1418) |
+| `ractor_sched_enq` / `ractor_sched_deq` | `thread_pthread.c:1290` / `:1332` | [`thread_sched.c:1302`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1302) / [`:1364`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1364) |
+| `native_thread_dedicated_inc` / `_dec` | `thread_pthread.c:1821` | [`thread_sched.c:1858`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1858) / [`:1884`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1884) |
+| `nt_start` | `thread_pthread.c:2366` 付近 | [`thread_sched.c:1978`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1978)（SNT のループは [`nt_shared_loop`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L2062) に分離） |
+| `native_thread_check_and_create_shared` | `thread_pthread_mn.c:408` | [`thread_sched_mn.c:932`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched_mn.c#L932) |
+| `thread_sched_wait_events` | `thread_pthread_mn.c` | [`thread_sched_mn.c:536`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched_mn.c#L536) |
+| `timer_thread_register_waiting` | `thread_pthread_mn.c:702` | [`thread_sched_mn.c:1464`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched_mn.c#L1464) |
+| `native_thread_create0`（`pthread_create`） | `thread_pthread.c:2185` | [`thread_pthread.c:791`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_pthread.c#L791) |
+| `default_max_cpu` | `thread_pthread.c:1802` | [`thread_sched.c:1838`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1838) + [`native_thread_default_max_cpu`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_pthread.c#L911) |
 
 ### SNT プールの縮小（wiki の Q6・contributions と重なる）
 
 | コミット | 日付 | 内容 |
 |---------|------|------|
-| `43793ca21a` | 2026-08-12 | **thread: retire a shared thread the work does not need**。起こされても GRQ が空、が [`SNT_IDLE_RETIRE`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1350-L1361)（3）回を超えて続いたら、その SNT は自分で終了する（最後の 1 本は残す）。dedicated から戻るときにプールが `max_cpu` に達していれば、その nt も retire する |
-| `dce74ebf04` | 2026-08-13 | **thread: free a shared native thread's resources when it retires**。[`native_thread_destroy_self`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_pthread.c#L507-L515) が nt / `nt_context` / altstack を解放する。解放前に `sigaltstack(SS_DISABLE)` で altstack の登録を外す |
+| `43793ca21a` | 2026-08-12 | **thread: retire a shared thread the work does not need**。起こされても GRQ が空、が [`SNT_IDLE_RETIRE`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1350-L1361)（3）回を超えて続いたら、その SNT は自分で終了する（最後の 1 本は残す）。dedicated から戻るときにプールが `max_cpu` に達していれば、その nt も retire する |
+| `dce74ebf04` | 2026-08-13 | **thread: free a shared native thread's resources when it retires**。[`native_thread_destroy_self`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_pthread.c#L507-L515) が nt / `nt_context` / altstack を解放する。解放前に `sigaltstack(SS_DISABLE)` で altstack の登録を外す |
 | `1da2eea37c` | 2026-08-13 | **thread: remove the unused SNT_KEEP_SECONDS path**。期限を待ちループのたびに計算し直すので、起こされ続ける SNT はタイムアウトしない。さらに `running_cnt` を誤って減らしていた。このため有効化しても役に立たないと判断され、削除された |
 
 `43793ca21a` のコミットメッセージにある計測（8 コア、`RUBY_MAX_CPU=16`、1 リクエストごとに LAN 上の memcached を 1 回参照）:
@@ -86,7 +86,7 @@ thread.c                           thread.c
 | `d32793fe8e` / `80b867e466` | メッセージ待ちにタイムアウトを指定できるようになった（`ractor_selector__wait` が `end` 期限を受け取る）。別ポートの wakeup でタイムアウトが消える不具合も修正 |
 | `acc5cd03d9` | Ractor id を 64 bit 化 |
 
-`ractor_selector__wait` が wakeup のたびに全ポートを `st_foreach` で走査する構造は変わっていない（[`ractor_sync.c:1849`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/ractor_sync.c#L1849-L1874)）。
+`ractor_selector__wait` が wakeup のたびに全ポートを `st_foreach` で走査する構造は変わっていない（[`ractor_sync.c:1849`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/ractor_sync.c#L1849-L1874)）。
 
 ### per-Ractor GC
 

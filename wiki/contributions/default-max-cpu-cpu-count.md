@@ -8,8 +8,8 @@ pr: merged (e98f95b4fd)
 
 # `default_max_cpu` を物理 CPU 数に変更する
 
-> **2026-10-11 注記**: 本ページはマージ時点（commit `e98f95b4fd`）の記述で、リンクも同コミットのまま。`17aeb89200` では、設定箇所が [`thread_sched.c:1838-1848`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_sched.c#L1838-L1848)（`RUBY_MAX_CPU` の読み取り）と
-> [`native_thread_default_max_cpu`](https://github.com/ruby/ruby/blob/17aeb89200f13a392c645102800b68b9d16b926b/thread_pthread.c#L911)（`thread_pthread.c:911`、sysconf の呼び出し）に分かれた。
+> **2026-10-11 注記**: 本ページはマージ時点（commit `e98f95b4fd`）の記述で、リンクも同コミットのまま。`17aeb89200` では、設定箇所が [`thread_sched.c:1838-1848`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_sched.c#L1838-L1848)（`RUBY_MAX_CPU` の読み取り）と
+> [`native_thread_default_max_cpu`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/thread_pthread.c#L911)（`thread_pthread.c:911`、sysconf の呼び出し）に分かれた。
 
 ## 問題・提案（マージ済み）
 
