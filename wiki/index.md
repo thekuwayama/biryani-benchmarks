@@ -2,7 +2,7 @@
 
 **ゴール**: ruby/ruby の Ractor にパフォーマンス関連のコントリビュートをする。
 
-最終更新: 2026-11-08（biryani を v0.0.16 `19b40e0` に更新。peer の切断による例外を Ractor の外に漏らさないようになった）
+最終更新: 2026-11-09（Q10 の原因を特定した。グローバル GC と重なって major GC が minor GC になり、`heap_prepare` が `rb_bug` で落ちる）
 
 ---
 
@@ -38,7 +38,7 @@
 - [findings/rperf-concurrent-vs-parallel](findings/rperf-concurrent-vs-parallel.md) — rperf の計測モデル：各 Ractor 独立の並行計測であり、実時間（並列）の重複を含む
 - [findings/ractor-pool-feasibility](findings/ractor-pool-feasibility.md) — **Q3 解答**: Ractor プールは実装可能。当初は効果が限定的と予想したが、2026-10-11 の実測で 4.0.5 でも約 2.4 倍になり訂正
 - [findings/per-ractor-gc-ractor-churn-cost](findings/per-ractor-gc-ractor-churn-cost.md) — **Q8**: master の per-Ractor GC では Ractor ごとに objspace 生成・retire GC・absorb が走る。`objspace_absorb` に O(N²) の末尾探索
-- [findings/gc-cannot-create-page-after-major-gc](findings/gc-cannot-create-page-after-major-gc.md) — **Q10**: 4.1.0-preview1 で biryani（`-c50 -m100`）が `[BUG] cannot create a new page after major GC` で落ちる（4 GB の VM で 10 回中 2 回、8 GiB でも再現）。OOM ではなく `allocatable_bytes` が 0 のまま
+- [findings/gc-cannot-create-page-after-major-gc](findings/gc-cannot-create-page-after-major-gc.md) — **Q10 解答**: 4.1.0-preview1 で biryani（`-c50 -m100`）が `[BUG] cannot create a new page after major GC` で落ちる。1 ページのヒープの唯一のページが pool に残ったまま、`heap_prepare` が頼る major GC がグローバル GC との重なりで minor GC になるのが原因。PR ruby/ruby#19734 の変更で落ちなくなる
 - [findings/ractor-io-copy-regression](findings/ractor-io-copy-regression.md) — master・4.1.0-preview1 では IO を Ractor にコピーで渡せない（4.0.x は `#clone` で動いた）。biryani 0.0.15 が動かない（main `cac9ff9` で move に変更済み）
 - [findings/snt-keep-seconds-disabled](findings/snt-keep-seconds-disabled.md) — `SNT_KEEP_SECONDS = 0` により SNT プールが実行時に縮小しない（`e98f95b4fd` 時点。上流で削除済み、retire に置き換え）
 
@@ -63,7 +63,7 @@
 
 ## 未解決の疑問
 
-- [questions/README](questions/README.md) — Q1〜Q10（Q1・Q2・Q3・Q4・Q5 解決済み。Q6: 一部は上流で解決（SNT retire）、master で再計測待ち。Q7: 未着手 — biryani ノンブロッキング化の実測。Q8: 一部解決 — per-Ractor GC の Ractor ごとの固定コスト、プール化で回避できる。Q9: 未着手 — 4.0.5 でも Ractor の使い捨てが重い理由。Q10: 未着手 — 4.1.0-preview1 の GC ページ確保の `rb_bug`）
+- [questions/README](questions/README.md) — Q1〜Q10（Q1・Q2・Q3・Q4・Q5 解決済み。Q6: 一部は上流で解決（SNT retire）、master で再計測待ち。Q7: 未着手 — biryani ノンブロッキング化の実測。Q8: 一部解決 — per-Ractor GC の Ractor ごとの固定コスト、プール化で回避できる。Q9: 未着手 — 4.0.5 でも Ractor の使い捨てが重い理由。Q10: 解決 — 4.1.0-preview1 の GC ページ確保の `rb_bug` は、グローバル GC との重なりで major GC が minor GC になるため）
 
 ---
 
@@ -72,6 +72,7 @@
 - [contributions/default-max-cpu-cpu-count](contributions/default-max-cpu-cpu-count.md) — **★ マージ済み（e98f95b4fd）**: `default_max_cpu=8` → 物理 CPU 数に変更（I/O +3.1%・CPU +5.5%）
 - [contributions/objspace-absorb-free-pages-tail](contributions/objspace-absorb-free-pages-tail.md) — **候補（PR）**: `objspace_absorb` の free page 連結を O(N²) → O(src) に（実験ビルドで効果確認済み）
 - [contributions/ractor-io-copy-regression](contributions/ractor-io-copy-regression.md) — **候補（issue）**: master で IO を Ractor にコピーで渡せなくなった（4.1.0-preview1 に入り、NEWS に記載なし）
+- [contributions/heap-prepare-pooled-page-global-gc](contributions/heap-prepare-pooled-page-global-gc.md) — **候補**: `heap_prepare` の `rb_bug` を直す未マージの PR ruby/ruby#19734 に、グローバル GC との重なりという別のきっかけを伝える。別案は、負けた側の local GC を省く PR（どちらも計装ビルドで 20 回中 0 回）
 - [contributions/snt-replenishment-overhead](contributions/snt-replenishment-overhead.md) — **調査中**: SNT 補充の頻繁な pthread_create を削減（CPU ~10%）。縮小側は上流で実装済み、master で再計測待ち
 
 ### クローズ済み

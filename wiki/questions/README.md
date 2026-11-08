@@ -214,17 +214,24 @@ Stream Ractor をプール化すると、**4.0.5 でもスループットが約 
 
 関連: [findings/ractor-pool-feasibility](../findings/ractor-pool-feasibility.md)
 
-### Q10: 4.1.0-preview1 の `[BUG] cannot create a new page after major GC` はどの経路で起きるのか（→ 未着手）
+### Q10: 4.1.0-preview1 の `[BUG] cannot create a new page after major GC` はどの経路で起きるのか（→ 解決）
 
 4.1.0-preview1 で biryani に `-n10000 -c50 -m100` をかけると、4 GB の VM で 10 回中 2 回、8 GiB の VM でも 8 回目に、`heap_prepare` の `rb_bug` でプロセスが落ちた（[findings/gc-cannot-create-page-after-major-gc](../findings/gc-cannot-create-page-after-major-gc.md)）。
 OOM ではなく、2 回の GC の後も objspace の `allocatable_bytes` が 0 のまま、再利用できる空きページもなかった。
-上流はグローバル GC 後に予算 0 で残る objspace を手当てしている（`default.c:9873-9891`）が、それ以外の経路が残っているとみられる。
 
-**確認したいこと**:
-- 落ちる直前の objspace の状態（`allocatable_bytes`・`empty_pages_count`・直前の GC がローカルかグローバルか）
-- biryani なしの最小再現（Ractor を作っては捨てながら、各 Ractor でオブジェクトを確保し続ける）で再現するか
-- 上流 master の先頭でも起きるか、既出の報告があるか
+**回答**（2026-11-09）:
 
-再現と原因が固まれば、4.1.0 のリリース前に報告する価値が高い（preview で見つかったクラッシュ）。
+ヒープが 1 ページしかない Ractor の objspace では、「次は major」と決まった GC の後、唯一のページが pool（`pooled_pages`）に入り、`free_pages` が NULL になる。
+`heap_prepare` は、2 回目の `gc_start` が major GC になって pool が空くことに頼っている。
+ところが、その `gc_start` がグローバル GC に進んで VM ロックを待つ間に別の Ractor のグローバル GC が走ると、`need_major_gc` が消され、local GC へのフォールスルーが **minor GC** になる。
+minor GC はグローバル GC が作った `free_pages` を捨て、ページをまた pool に入れ、`MAJOR_BY_OLDGEN` を立て直すので pool は戻らない → `rb_bug`。
+
+- 2026-11-03 のコアダンプ: 最後の GC が minor（`latest_gc_info = 0x100`）、`need_major_gc = MAJOR_BY_OLDGEN`、唯一のページが pool、`free_pages` が NULL
+- 計装ビルドで `rake load` を 20 回: 5 回クラッシュ。グローバル GC と重なった major 分岐 7 回がすべてクラッシュし、重ならなかった 1,064 回はすべて成功
+- 上流 master `2cd57fe63d` も同じコード。同じ最終状態を `GC.stress` で起こす未マージの PR [ruby/ruby#19734](https://github.com/ruby/ruby/pull/19734) があり、その変更を入れると biryani の経路でも 20 回中 0 回になった
+
+最初の確認項目のうち、biryani なしの最小再現だけはまだない（`load/repro_heap_prepare_pooled.rb` では重なりが起きない）。
+
+コントリビュート候補: [contributions/heap-prepare-pooled-page-global-gc](../contributions/heap-prepare-pooled-page-global-gc.md)
 
 関連: [findings/per-ractor-gc-ractor-churn-cost](../findings/per-ractor-gc-ractor-churn-cost.md)

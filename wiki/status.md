@@ -1,6 +1,6 @@
 ---
 date: 2026-05-23
-updated: 2026-11-03
+updated: 2026-11-09
 tags: [status]
 ---
 
@@ -56,7 +56,9 @@ biryani は main `cac9ff9` で IO を move で渡すようになり、シムな�
 上の master の数値は preview1 でもほぼ同じになるはずだが、biryani main（lingering close を含む）との組み合わせでは**まだ計測していない**。
 **preview1 では 2 つの問題が出る**: (1) 1 プロセスで 10,000 リクエストの run を続けて流すと、RSS が 4.5〜7.7 GB に達する（`bench_c.rb` / `bench_m.rb`）。
 4 GB の VM では OOM で kill されたので、**Lima VM のメモリを 8 GiB に増やした**（2026-11-03。それまでの計測はすべて 4 GB）。それでも `bench_m` は最後の `-m100` の run で OOM になることが多かったので、`bench_c` / `bench_m` は run ごとにサーバーを起動し直す形にした（2026-11-04。最大 RSS 2.3〜2.4 GB で全件成功）。
-(2) `-c50 -m100` で、`[BUG] cannot create a new page after major GC` で落ちることがある（4 GB で 10 回中 2 回、8 GiB でも 8 回目に再現。4.0.5 は 10 回とも成功）。メモリ不足ではない → [findings/gc-cannot-create-page-after-major-gc](findings/gc-cannot-create-page-after-major-gc.md)
+(2) `-c50 -m100` で、`[BUG] cannot create a new page after major GC` で落ちることがある（4 GB で 10 回中 2 回、8 GiB でも 8 回目に再現。4.0.5 は 10 回とも成功）。メモリ不足ではない。
+原因は 2026-11-09 に特定した。ヒープが 1 ページの Ractor の objspace で、`heap_prepare` が頼りにしている major GC が、別の Ractor のグローバル GC と重なると minor GC になり、唯一のページが pool に残る。
+同じ最終状態を直す未マージの PR ruby/ruby#19734 の変更で、biryani でも落ちなくなった（計装ビルドで 20 回中 0 回、修正なしは 20 回中 5 回）→ [findings/gc-cannot-create-page-after-major-gc](findings/gc-cannot-create-page-after-major-gc.md)
 
 ---
 
@@ -143,7 +145,7 @@ rperf は並行計測（重複あり）なので複数 Ractor の数値を合算
 | Q7 | biryani ノンブロッキング化の実測 | 未着手 |
 | Q8 | per-Ractor GC 下で、使い捨て Ractor の回収は STW を誘発するか | 一部解決（STW より Ractor ごとの固定コストが問題。プール化で回避できる） |
 | Q9 | 4.0.5 でも Ractor の使い捨てはなぜ重いのか | 未着手 |
-| Q10 | 4.1.0-preview1 の `[BUG] cannot create a new page after major GC` の経路 | 未着手（`-c50 -m100` で 4 GB の VM で 10 回中 2 回、8 GiB でも再現） |
+| Q10 | 4.1.0-preview1 の `[BUG] cannot create a new page after major GC` の経路 | **解決**（グローバル GC と重なって major GC が minor GC になり、1 ページのヒープの唯一のページが pool に残る。biryani なしの最小再現はまだない） |
 
 詳細: [questions/README](questions/README.md)
 
@@ -158,6 +160,7 @@ rperf は並行計測（重複あり）なので複数 Ractor の数値を合算
 | SNT タイムアウト時の nt 解放 + `SNT_KEEP_SECONDS` 有効化 | **クローズ**（上流で実装済み: `dce74ebf04` / `43793ca21a`） | — |
 | `objspace_absorb` の free page 連結を O(N²) → O(src) に | **候補（PR）** | absorb の 99.6% がこの行。実験ビルドで Ractor 逐次生成 2.7 倍、biryani の終了処理 6 s → 0.5 s |
 | master で IO を Ractor にコピーで渡せない | **候補（issue）** | 4.0.x では `#clone` で動いた。NEWS に記載なし |
+| `heap_prepare` の `rb_bug`（グローバル GC と重なって major GC が minor GC になる） | **候補**（PR ruby/ruby#19734 への情報提供。別案は負けた側の local GC を省く PR） | 計装ビルドで、重なった 7 回がすべてクラッシュ。PR #19734 の変更・別案とも 20 回中 0 回 |
 | broadcast → signal | **クローズ** | Linux では broadcast は走らない |
 
 詳細: [contributions/](contributions/)

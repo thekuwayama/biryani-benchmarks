@@ -1,6 +1,6 @@
 ---
 date: 2026-05-17
-updated: 2026-11-03
+updated: 2026-11-09
 tags: [contribution]
 ---
 
@@ -28,17 +28,17 @@ tags: [contribution]
 |------|------|
 | `objspace_absorb` の free page 連結を O(N²) → O(src) に | 候補（PR）。実験ビルドで効果確認済み |
 | master で IO を Ractor にコピーで渡せない | 候補（issue） |
+| グローバル GC の取り合いに負けると major GC が minor GC になり、`heap_prepare` が `rb_bug` で落ちる | 候補（未マージの PR ruby/ruby#19734 への情報提供。別案として、負けた側の local GC を省く PR）。計装ビルドで原因の経路と修正の効果を確認済み |
 
-詳細: [contributions/objspace-absorb-free-pages-tail](objspace-absorb-free-pages-tail.md), [contributions/ractor-io-copy-regression](ractor-io-copy-regression.md)
+詳細: [contributions/objspace-absorb-free-pages-tail](objspace-absorb-free-pages-tail.md), [contributions/ractor-io-copy-regression](ractor-io-copy-regression.md), [contributions/heap-prepare-pooled-page-global-gc](heap-prepare-pooled-page-global-gc.md)
 
 ## 調査中
 
 | 候補 | 状態 |
 |------|------|
 | SNT 補充オーバーヘッド削減（ヒステリシス案） | 調査中（縮小側は上流で実装済み。次の実験: master `17aeb89200` で再計測）|
-| 4.1.0-preview1 の `[BUG] cannot create a new page after major GC`（issue 候補） | 調査中（biryani `-c50 -m100` で 4 GB の VM で 10 回中 2 回、8 GiB でも再現。4.0.5 では起きない。原因の経路は未特定 → Q10）|
 
-詳細: [contributions/snt-replenishment-overhead](snt-replenishment-overhead.md), [findings/gc-cannot-create-page-after-major-gc](../findings/gc-cannot-create-page-after-major-gc.md)
+詳細: [contributions/snt-replenishment-overhead](snt-replenishment-overhead.md)
 
 ## クローズ済み
 

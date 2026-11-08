@@ -4,6 +4,23 @@
 
 ---
 
+## [2026-11-09] finding | Q10 解決 — グローバル GC と重なって major GC が minor GC になる
+
+- 11-03 に取っていたコアダンプと計装ビルド（Lima VM の `4.1.0-preview1-hptrace`）の結果を、まだ wiki に書いていなかったので読み直した。
+  落ちた objspace は、最後の GC が minor（`latest_gc_info = 0x100`）、`need_major_gc = MAJOR_BY_OLDGEN` で、12 ヒープ中 11 個が 1 ページ。唯一のページが `pooled_pages` に入ったままで、`free_pages` は NULL だった
+- ソースで経路を特定した。`heap_prepare` の 2 回目の `gc_start` がグローバル GC に進み、VM ロックを待つ間に別の Ractor のグローバル GC が走ると、`need_major_gc` が消されたまま local GC にフォールスルーし、minor GC になる。
+  minor GC は sweep の最初に `free_pages` を捨て、ページを再び pool に入れ、`MAJOR_BY_OLDGEN` を立て直す → `rb_bug`
+- 計装ビルドの `gc_start` に、フォールスルーのトレースと、環境変数で切り替える修正 2 つ（案 A: 待つ間に別のグローバル GC が走ったら local GC をしない / PR ruby/ruby#19734 の変更）を入れた。`rake load` の結果:
+  - 修正なし: 20 回中 5 回クラッシュ。グローバル GC と重なった major 分岐 7 回がすべてクラッシュし、重ならなかった 1,064 回はすべて成功
+  - 案 A: 20 回中 0 回（重なり 2 回とも成功）。PR #19734 の変更: 20 回中 0 回（重なり 1 回、pool を戻して成功）
+- 上流 master `2cd57fe63d`（2026-11-08）も同じコード。PR #19734（eightbitraptor、2026-11-05、Open）は同じ最終状態を `GC.stress` で起こすもので、グローバル GC との重なりには触れていない。
+  PR の 1 行の再現は preview1 で 5 回中 5 回落ち、PR の変更で 5 回とも通り、案 A だけでは 5 回とも落ちた
+- biryani なしの最小再現は作れなかった。未コミットの `load/repro_heap_prepare_pooled.rb` は major 分岐に入るが、グローバル GC と重ならない（worker 50 / 200 で 0 回）
+- 記録先: `findings/gc-cannot-create-page-after-major-gc.md`（全面的に更新）、`contributions/heap-prepare-pooled-page-global-gc.md`（新規）、Q10、status、contributions/README
+- 次のステップ: biryani なしの最小再現（若い Ractor が初めて `MAJOR_BY_OLDGEN` を立てる瞬間に、グローバル GC の取り合いを起こす）。PR #19734 にコメントするかは人間が判断する
+
+---
+
 ## [2026-11-08] maintenance | raw/biryani を v0.0.16 19b40e0 に更新
 
 - `raw/biryani` を main `c417f0f` → v0.0.16 `19b40e0` に更新した（`Gemfile.lock` も 0.0.16 に）。Ractor の構造は変わらない。主な変更:
