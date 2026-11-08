@@ -4,6 +4,18 @@
 
 ---
 
+## [2026-11-08] maintenance | raw/biryani を v0.0.16 19b40e0 に更新
+
+- `raw/biryani` を main `c417f0f` → v0.0.16 `19b40e0` に更新した（`Gemfile.lock` も 0.0.16 に）。Ractor の構造は変わらない。主な変更:
+  - #78: peer の切断による例外（`IOError` / `SystemCallError`）を Ractor の外に漏らさない。`Frame.read` は `ECONNRESET` などを EOF として扱う。recv_loop の受信処理を `recv_frames` と `linger` に切り出した
+  - #77: HPACK のデコードエラーを `COMPRESSION_ERROR` の接続エラーにする
+  - #76: 閉じたストリームにはレスポンスを送らない
+- `Stream#initialize` のシグネチャは変わっていないので、`load/ractor_pool_shim.rb` はそのまま動く
+- 動作確認（4.1.0-preview1）: `rake load` は全件成功。`server_c25_m50` はプールなし 3,470 req/s、プール 4 で 21,616 req/s（いずれも 10,000 件すべて成功、各 1 回）
+- 次のステップ: Q10
+
+---
+
 ## [2026-11-04] benchmark | bench_c / bench_m を run ごとにサーバーを起動し直す形に
 
 - 1 プロセスで全 run を流すと、4.1.0-preview1 では run ごとに RSS が積み上がり、8 GiB の VM でも `bench_m` の `-m100` で OOM になっていた。

@@ -25,7 +25,7 @@ Connection Ractor（接続ごと）
         Stream Ractor（ストリームごと）— proc.call → @port に [:response, res, stream_id] を送信
 ```
 
-biryani v0.0.14 以降の構成（`raw/biryani` は main `c417f0f`。v0.0.15 に、IO を move で渡す変更、recv_loop の lingering close、peer が切断したら Connection を終える修正を加えたもの）。v0.0.12 までは `Ractor.select(@sock, @streams_ctx.tx)` で 2 つのポートを待っていた。
+biryani v0.0.14 以降の構成（`raw/biryani` は v0.0.16 `19b40e0`。v0.0.15 に、IO を move で渡す変更、recv_loop の lingering close、peer が切断したら Connection を終える修正、peer の切断による例外を Ractor の外に漏らさない修正などを加えたもの）。v0.0.12 までは `Ractor.select(@sock, @streams_ctx.tx)` で 2 つのポートを待っていた。
 
 詳細: [internals/biryani-ractor-architecture](internals/biryani-ractor-architecture.md)
 

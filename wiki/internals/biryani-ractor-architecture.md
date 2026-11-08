@@ -1,6 +1,6 @@
 ---
 date: 2026-05-17
-updated: 2026-11-04
+updated: 2026-11-08
 tags: [internals]
 ---
 
@@ -21,6 +21,11 @@ biryani のソースコード（`lib/biryani/server.rb`, `connection.rb`, `strea
 > **2026-11-04 更新（`raw/biryani` を main `c417f0f` に更新）**: `60df001` で、**peer が接続を閉じたら Connection Ractor が終わる**ようになった。
 > それまでは、閉じたストリームも `@streams_ctx` に残るため `@streams_ctx.empty?` が真にならず、peer が切断しても Connection Ractor（と fd）が終わらなかった。
 > 1 プロセスで h2load を何度も流す計測では、前の run の Connection Ractor が残り続けていたことになる（→ [findings/per-ractor-gc-ractor-churn-cost](../findings/per-ractor-gc-ractor-churn-cost.md) §3）
+>
+> **2026-11-08 更新（`raw/biryani` を v0.0.16 `19b40e0` に更新）**: Ractor の構造は変わらない。変わったのは次の 3 点。
+> - peer の切断による例外（`IOError` / `SystemCallError`、`PEER_CLOSED_ERRORS`）を Ractor の外に漏らさない。`Frame.read` は `ECONNRESET` などを EOF として扱い、`serve` / `Server` / recv_loop の close も例外を握りつぶす
+> - recv_loop の受信処理を `Connection.recv_frames` と `Connection.linger` に切り出した（下記）
+> - `handle_response` は、RST_STREAM などで閉じたストリームにはレスポンスを送らない。HPACK のデコードエラーは `COMPRESSION_ERROR` の接続エラーになる
 
 ## Ractor の構造
 
@@ -61,42 +66,45 @@ accept した IO は、生成した Ractor に `send(io, move: true)` で渡す�
 
 接続を受けた Ractor は内部でさらに 2 種類の並行処理を持つ：
 
-**recv_loop** — フレーム受信専用の Ractor を 1 つ追加生成：
+**recv_loop** — フレーム受信専用の Ractor を 1 つ追加生成（v0.0.16）：
 ```ruby
 def recv_loop(io)          # serve から recv_loop(io.clone) で呼ばれる
   r = Ractor.new(@port) do |port_|
     io_ = Ractor.receive
-    eof = false
-    loop do
-      obj = Frame.read(io_)
-      if obj.nil?
-        eof = true
-        port_.send(:eof, move: true)
-        break
-      end
-
-      port_.send([:frame, obj], move: true)
-    end
-
-    # Lingering close
-    unless eof
-      begin
-        Timeout.timeout(LINGER_TIMEOUT) do   # LINGER_TIMEOUT = 5
-          loop { io_.readpartial(16_384) }
-        end
-      rescue IOError, SystemCallError, Timeout::Error
-      end
-    end
+    Connection.recv_frames(io_, port_)
   ensure
-    io_&.close
+    Biryani.ignore_peer_closed { io_&.close }
   end
   r.send(io, move: true)
 end
+
+def self.recv_frames(io, port)
+  loop do
+    obj = Frame.read(io)               # peer の切断（ECONNRESET など）は nil = EOF
+    break if obj.nil?
+
+    port.send([:frame, obj], move: true)
+  rescue Ractor::ClosedError
+    return linger(io)                  # Connection が先に終わった
+  end
+
+  port.send(:eof, move: true)
+rescue Ractor::ClosedError
+  # peer が閉じた後に Connection も終わっていた
+end
+
+# Lingering close
+def self.linger(io)
+  Timeout.timeout(LINGER_TIMEOUT) do   # LINGER_TIMEOUT = 5
+    loop { io.readpartial(16_384) }
+  end
+rescue *PEER_CLOSED_ERRORS, Timeout::Error
+end
 ```
 
-**lingering close**（main `15154b8`）: Connection Ractor が先に終わると `@port` が閉じ、`port_.send` が `Ractor::ClosedError` を投げる。
-`Ractor::ClosedError` は `StopIteration` のサブクラスなので `loop` が黙って抜け、`eof` が false のまま後半に進む。
-そこで相手が閉じるまで（最大 5 秒）受信データを読み捨ててから close する。未読データを残して close すると RST が飛ぶので、それを避けるためである。
+**lingering close**（main `15154b8`、v0.0.16 で `linger` に切り出し）: Connection Ractor が先に終わると `@port` が閉じ、`port.send` が `Ractor::ClosedError` を投げる。
+v0.0.16 では `loop` の中でこれを捕まえて `linger` に進む（`15154b8` では、`Ractor::ClosedError` が `StopIteration` のサブクラスなので `loop` が黙って抜けることを利用していた）。
+`linger` は相手が閉じるまで（最大 5 秒）受信データを読み捨ててから close する。未読データを残して close すると RST が飛ぶので、それを避けるためである。
 4.1.0-preview1 同梱の timeout 0.6.1 は、状態を Ractor ごとに持つ（[`Timeout::State.instance`](https://github.com/ruby/ruby/blob/2d08b5f42f2cbed4a4e6ecf8d62987a4f21f98c1/lib/timeout.rb#L66-L74)（`lib/timeout.rb:66`）が `Ractor.store_if_absent` を使う）。
 そのため lingering に入った recv_loop Ractor では、`Timeout.timeout` がその Ractor 用のタイムアウトスレッドを 1 つ作る。
 h2load のように `-c` 本の接続を最後まで使い回す負荷では、lingering に入るのは終了時の各接続 1 回だけで、スループットへの影響は小さいはず（未計測）。
